@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="Moeda TheCoinSquash girando">
+<title>TheCoinSquash</title>
+<style>
+.coin{transform-box:fill-box;transform-origin:center;animation:cs-spin 3s cubic-bezier(.42,0,.58,1) infinite}
+.sh{transform-box:fill-box;transform-origin:center;animation:cs-sh 3s cubic-bezier(.42,0,.58,1) infinite}
+.fa{animation:cs-fa 3s step-end infinite}
+.fb{animation:cs-fb 3s step-end infinite}
+@keyframes cs-spin{0%{transform:scaleX(1)}25%{transform:scaleX(.04)}50%{transform:scaleX(1)}75%{transform:scaleX(.04)}100%{transform:scaleX(1)}}
+@keyframes cs-sh{0%{transform:scaleX(1);opacity:.18}25%{transform:scaleX(.35);opacity:.1}50%{transform:scaleX(1);opacity:.18}75%{transform:scaleX(.35);opacity:.1}100%{transform:scaleX(1);opacity:.18}}
+@keyframes cs-fa{0%{opacity:1}25%{opacity:0}75%{opacity:1}100%{opacity:1}}
+@keyframes cs-fb{0%{opacity:0}25%{opacity:1}75%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.coin,.sh,.fa,.fb{animation:none}.fb{opacity:0}}
+</style>
+<ellipse class="sh" cx="160" cy="290" rx="94" ry="10" fill="#854F0B"/>
+<g class="coin">
+<circle cx="160" cy="150" r="110" fill="#854F0B"/>
+<circle cx="160" cy="150" r="103" fill="#EF9F27"/>
+<circle cx="160" cy="150" r="103" fill="none" stroke="#854F0B" stroke-width="8" stroke-linecap="round" stroke-dasharray="1.5 16.48"/>
+<circle cx="160" cy="150" r="88" fill="#FAC775"/>
+<g class="fa">
+<circle cx="160" cy="150" r="82" fill="#3B6D11"/>
+<circle cx="160" cy="150" r="66" fill="#97C459"/>
+<text x="160" y="186" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="94" font-weight="500" fill="#173404">$</text>
+</g>
+<g class="fb">
+<circle cx="160" cy="150" r="82" fill="#97C459"/>
+<circle cx="160" cy="150" r="66" fill="#3B6D11"/>
+<path d="M160,150 C136,136 132,106 148,103 C157,101 160,109 160,115 C160,109 163,101 172,103 C188,106 184,136 160,150 Z" fill="#C0DD97" transform="rotate(45 160 150)"/>
+<path d="M160,150 C136,136 132,106 148,103 C157,101 160,109 160,115 C160,109 163,101 172,103 C188,106 184,136 160,150 Z" fill="#C0DD97" transform="rotate(135 160 150)"/>
+<path d="M160,150 C136,136 132,106 148,103 C157,101 160,109 160,115 C160,109 163,101 172,103 C188,106 184,136 160,150 Z" fill="#C0DD97" transform="rotate(225 160 150)"/>
+<path d="M160,150 C136,136 132,106 148,103 C157,101 160,109 160,115 C160,109 163,101 172,103 C188,106 184,136 160,150 Z" fill="#C0DD97" transform="rotate(315 160 150)"/>
+<path d="M160,152 C166,168 166,182 158,196" fill="none" stroke="#C0DD97" stroke-width="6" stroke-linecap="round"/>
+</g>
+<circle cx="160" cy="150" r="82" fill="none" stroke="#BA7517" stroke-width="3"/>
+</g>
+</svg>

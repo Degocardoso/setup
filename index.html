@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Setup — thecoinsquash</title>
+<meta name="description" content="O setup completo do canal thecoinsquash: PC, periféricos, monitores e console." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<meta property="og:title" content="Setup — thecoinsquash" />
+<meta property="og:description" content="Tudo que eu uso nas lives." />
+<style>
+  :root{
+    --ouro:#f5b53c;
+    --ouro-escuro:#ba7517;
+    --verde:#9bdb5c;
+    --verde-escuro:#3b6d11;
+    --fundo:#080b12;
+    --fundo-2:#101726;
+    --carta:#0e1520;
+    --texto:#f6f7fb;
+    --apagado:#9ea7b6;
+    --linha:rgba(255,255,255,.08);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  body{
+    background:
+      radial-gradient(circle at 50% 0%, rgba(155,219,92,.07), transparent 45%),
+      linear-gradient(160deg, var(--fundo), var(--fundo-2));
+    background-attachment:fixed;
+    color:var(--texto);
+    font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+
+  .grade{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size:72px 72px;
+  }
+
+  .quadro{
+    position:relative; z-index:1;
+    max-width:1120px;
+    margin:0 auto;
+    padding:72px 24px 96px;
+  }
+
+  /* ---------- topo ---------- */
+  header{text-align:center; margin-bottom:72px}
+
+  .moeda{
+    width:120px; height:120px;
+    margin:0 auto 24px;
+    position:relative;
+    transform-style:preserve-3d;
+    animation:girar 5s linear infinite;
+  }
+  .moeda .face{position:absolute; inset:0; backface-visibility:hidden}
+  .moeda .face svg{width:100%; height:100%; display:block}
+  .moeda .tras{transform:rotateY(180deg)}
+  @keyframes girar{
+    from{transform:rotateY(0deg) rotateX(8deg)}
+    to{transform:rotateY(360deg) rotateX(8deg)}
+  }
+
+  h1{
+    font-size:clamp(38px,7vw,64px);
+    font-weight:900;
+    letter-spacing:-2px;
+    text-transform:lowercase;
+    line-height:1;
+  }
+  h1 .c{color:var(--ouro)}
+  h1 .s{color:var(--verde)}
+
+  .subtitulo{
+    margin-top:14px;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:.36em;
+    text-transform:uppercase;
+    color:var(--apagado);
+  }
+
+  .aviso{
+    margin:26px auto 0;
+    max-width:520px;
+    font-size:15px;
+    color:var(--apagado);
+  }
+
+  /* ---------- seções ---------- */
+  section{margin-bottom:56px}
+
+  .cabecalho{
+    display:flex; align-items:center; gap:16px;
+    margin-bottom:22px;
+  }
+  .cabecalho h2{
+    font-size:15px;
+    font-weight:800;
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    color:var(--verde);
+    white-space:nowrap;
+  }
+  .cabecalho .risco{
+    height:1px; flex:1;
+    background:linear-gradient(90deg, rgba(155,219,92,.4), transparent);
+  }
+
+  .lista{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:14px;
+  }
+
+  .item{
+    background:var(--carta);
+    border:1px solid var(--linha);
+    border-left:3px solid var(--ouro-escuro);
+    border-radius:12px;
+    padding:18px 20px;
+    transition:border-color .2s, transform .2s, background .2s;
+  }
+  .item:hover{
+    border-left-color:var(--ouro);
+    background:#121a27;
+    transform:translateY(-2px);
+  }
+
+  .item .nome{
+    font-size:17px;
+    font-weight:700;
+    letter-spacing:-.2px;
+  }
+  .item .detalhe{
+    margin-top:5px;
+    font-size:14px;
+    color:var(--apagado);
+  }
+  .item .marca{
+    display:inline-block;
+    margin-top:10px;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ouro);
+    opacity:.85;
+  }
+
+  /* ---------- rodapé ---------- */
+  footer{
+    margin-top:80px;
+    padding-top:32px;
+    border-top:1px solid var(--linha);
+    text-align:center;
+  }
+  .redes{
+    display:flex; flex-wrap:wrap; gap:12px;
+    justify-content:center;
+    margin-bottom:20px;
+  }
+  .redes a{
+    display:inline-block;
+    padding:10px 20px;
+    border:1px solid rgba(245,181,60,.45);
+    border-radius:999px;
+    color:var(--texto);
+    text-decoration:none;
+    font-size:14px;
+    font-weight:700;
+    transition:background .2s, border-color .2s, color .2s;
+  }
+  .redes a:hover{
+    background:rgba(245,181,60,.12);
+    border-color:var(--ouro);
+    color:var(--ouro);
+  }
+  .assinatura{font-size:13px; color:var(--apagado)}
+
+  @media (max-width:560px){
+    .quadro{padding:48px 18px 72px}
+    .lista{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="grade"></div>
+
+<!-- desenho da moeda -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+<symbol id="cara" viewBox="0 0 240 240">
+  <circle cx="120" cy="120" r="110" fill="#854F0B"/>
+  <circle cx="120" cy="120" r="103" fill="#EF9F27"/>
+  <circle cx="120" cy="120" r="103" fill="none" stroke="#854F0B" stroke-width="8" stroke-linecap="round" stroke-dasharray="1.5 16.48"/>
+  <circle cx="120" cy="120" r="88" fill="#FAC775"/>
+  <circle cx="120" cy="120" r="82" fill="#3B6D11"/>
+  <circle cx="120" cy="120" r="66" fill="#97C459"/>
+  <text x="120" y="156" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="96" font-weight="700" fill="#173404">$</text>
+  <circle cx="120" cy="120" r="82" fill="none" stroke="#BA7517" stroke-width="3"/>
+</symbol>
+<symbol id="coroa" viewBox="0 0 240 240">
+  <circle cx="120" cy="120" r="110" fill="#854F0B"/>
+  <circle cx="120" cy="120" r="103" fill="#EF9F27"/>
+  <circle cx="120" cy="120" r="103" fill="none" stroke="#854F0B" stroke-width="8" stroke-linecap="round" stroke-dasharray="1.5 16.48"/>
+  <circle cx="120" cy="120" r="88" fill="#FAC775"/>
+  <circle cx="120" cy="120" r="82" fill="#97C459"/>
+  <circle cx="120" cy="120" r="66" fill="#3B6D11"/>
+  <g fill="#C0DD97">
+    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(45 120 120)"/>
+    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(135 120 120)"/>
+    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(225 120 120)"/>
+    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(315 120 120)"/>
+  </g>
+  <path d="M120,122 C126,138 126,152 118,166" fill="none" stroke="#C0DD97" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="120" cy="120" r="82" fill="none" stroke="#BA7517" stroke-width="3"/>
+</symbol>
+</defs></svg>
+
+<div class="quadro">
+
+  <header>
+    <div class="moeda" aria-hidden="true">
+      <span class="face"><svg viewBox="0 0 240 240"><use href="#cara"/></svg></span>
+      <span class="face tras"><svg viewBox="0 0 240 240"><use href="#coroa"/></svg></span>
+    </div>
+    <h1>the<span class="c">coin</span><span class="s">squash</span></h1>
+    <div class="subtitulo">meu setup</div>
+    <p class="aviso">Tudo que eu uso nas lives, do PC à cadeira.</p>
+  </header>
+
+  <section>
+    <div class="cabecalho"><h2>PC</h2><div class="risco"></div></div>
+    <div class="lista">
+      <div class="item">
+        <div class="nome">Ryzen 7 9700X</div>
+        <div class="detalhe">Processador</div>
+        <span class="marca">AMD</span>
+      </div>
+      <div class="item">
+        <div class="nome">GeForce RTX 5070</div>
+        <div class="detalhe">Placa de vídeo</div>
+        <span class="marca">MSI</span>
+      </div>
+      <div class="item">
+        <div class="nome">B850 Gaming WiFi 6</div>
+        <div class="detalhe">Placa-mãe</div>
+        <span class="marca">Gigabyte</span>
+      </div>
+      <div class="item">
+        <div class="nome">Vengeance RGB 16GB</div>
+        <div class="detalhe">Memória DDR5 5600MHz</div>
+        <span class="marca">Corsair</span>
+      </div>
+      <div class="item">
+        <div class="nome">NV3 1TB</div>
+        <div class="detalhe">SSD M.2 NVMe</div>
+        <span class="marca">Kingston</span>
+      </div>
+      <div class="item">
+        <div class="nome">MAG A750GL</div>
+        <div class="detalhe">Fonte 750W 80 Plus</div>
+        <span class="marca">MSI</span>
+      </div>
+      <div class="item">
+        <div class="nome">MAG Coreliquid A12</div>
+        <div class="detalhe">Water cooler 360mm</div>
+        <span class="marca">MSI</span>
+      </div>
+      <div class="item">
+        <div class="nome">Kit 6 fans ARGB</div>
+        <div class="detalhe">Ventoinhas 120mm</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecalho"><h2>Periféricos</h2><div class="risco"></div></div>
+    <div class="lista">
+      <div class="item">
+        <div class="nome">Phantom</div>
+        <div class="detalhe">Teclado mecânico</div>
+        <span class="marca">SuperFrame</span>
+      </div>
+      <div class="item">
+        <div class="nome">X11</div>
+        <div class="detalhe">Mouse gamer</div>
+        <span class="marca">Attack Shark</span>
+      </div>
+      <div class="item">
+        <div class="nome">Zeus X</div>
+        <div class="detalhe">Headset</div>
+        <span class="marca">Redragon</span>
+      </div>
+      <div class="item">
+        <div class="nome">AM8PROT</div>
+        <div class="detalhe">Microfone com braço articulado</div>
+        <span class="marca">FIFINE</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecalho"><h2>Monitores</h2><div class="risco"></div></div>
+    <div class="lista">
+      <div class="item">
+        <div class="nome">AOC Gamer 24"</div>
+        <div class="detalhe">180Hz</div>
+        <span class="marca">AOC</span>
+      </div>
+      <div class="item">
+        <div class="nome">Speed 24G2HE5</div>
+        <div class="detalhe">24" IPS Full HD, 75Hz, 1ms</div>
+        <span class="marca">AOC</span>
+      </div>
+      <div class="item">
+        <div class="nome">Suporte NB F80</div>
+        <div class="detalhe">Braço articulado de mesa, dois deles</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecalho"><h2>Console</h2><div class="risco"></div></div>
+    <div class="lista">
+      <div class="item">
+        <div class="nome">PlayStation 5 Slim</div>
+        <div class="detalhe">Console</div>
+        <span class="marca">Sony</span>
+      </div>
+      <div class="item">
+        <div class="nome">DualSense Galactic Purple</div>
+        <div class="detalhe">Controle sem fio</div>
+        <span class="marca">Sony</span>
+      </div>
+      <div class="item">
+        <div class="nome">Base de carregamento</div>
+        <div class="detalhe">Dock para DualSense</div>
+        <span class="marca">Sony</span>
+      </div>
+      <div class="item">
+        <div class="nome">Hub USB 4 portas</div>
+        <div class="detalhe">Expansão para o PS5 Slim</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecalho"><h2>Estação</h2><div class="risco"></div></div>
+    <div class="lista">
+      <div class="item">
+        <div class="nome">Mesa em L</div>
+        <div class="detalhe">Escritório</div>
+      </div>
+      <div class="item">
+        <div class="nome">Mônaco BT07</div>
+        <div class="detalhe">Cadeira ergonômica</div>
+        <span class="marca">Luvinco</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="redes">
+      <a href="https://twitch.tv/thecoinsquash" target="_blank" rel="noopener">Twitch</a>
+      <a href="https://kick.com/thecoinsquash" target="_blank" rel="noopener">Kick</a>
+      <a href="https://instagram.com/thecoinsquash" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://x.com/thecoinsquash" target="_blank" rel="noopener">X</a>
+    </div>
+    <p class="assinatura">Seg a sex 21h30 · Sábado 16h</p>
+  </footer>
+
+</div>
+</body>
+</html>
