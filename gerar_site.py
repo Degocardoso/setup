@@ -96,53 +96,81 @@ CORES = {
 }
 
 
-def tirar_fundo(dados_png, lado_max=760):
-    """Fotos de loja vem com fundo branco, que vira um quadrado aceso
-    sobre o fundo escuro do site. Esta funcao apaga SO o branco que
-    encosta na borda da imagem, entao peca branca (o PS5, por exemplo)
-    continua inteira."""
-    im = Image.open(io.BytesIO(dados_png)).convert("RGBA")
-    im.thumbnail((lado_max, lado_max), Image.LANCZOS)
-    a = np.array(im)
-    rgb = a[:, :, :3].astype(int)
+LADO_FOTO = 600          # toda foto sai neste quadrado
+OCUPACAO = 0.86          # quanto da area a peca pode ocupar
 
-    claro = rgb.min(axis=2) > 246                      # praticamente branco puro
-    neutro = (rgb.max(axis=2) - rgb.min(axis=2)) < 10  # sem cor nenhuma
-    fundo = claro & neutro
 
-    alt, larg = fundo.shape
-    visto = np.zeros_like(fundo, dtype=bool)
+def _inundar(rgb, cinza_im, fundo_cor, tolerancia, limite_borda):
+    """Espalha pelo fundo a partir das bordas, parando no contorno
+    da peca. Devolve a mascara do que e fundo."""
+    alt, larg = rgb.shape[:2]
+    borda = np.array(cinza_im.filter(ImageFilter.FIND_EDGES))
+    borda[:2, :] = 0; borda[-2:, :] = 0; borda[:, :2] = 0; borda[:, -2:] = 0
+    candidato = (np.abs(rgb - fundo_cor).max(axis=2) < tolerancia) & (borda <= limite_borda)
+
+    visto = np.zeros((alt, larg), dtype=bool)
     fila = deque()
     for x in range(larg):
         for y in (0, alt - 1):
-            if fundo[y, x] and not visto[y, x]:
+            if candidato[y, x] and not visto[y, x]:
                 visto[y, x] = True; fila.append((y, x))
     for y in range(alt):
         for x in (0, larg - 1):
-            if fundo[y, x] and not visto[y, x]:
+            if candidato[y, x] and not visto[y, x]:
                 visto[y, x] = True; fila.append((y, x))
-
-    while fila:                                        # espalha pela borda
+    while fila:
         y, x = fila.popleft()
         for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             ny, nx = y + dy, x + dx
-            if 0 <= ny < alt and 0 <= nx < larg and fundo[ny, nx] and not visto[ny, nx]:
+            if 0 <= ny < alt and 0 <= nx < larg and candidato[ny, nx] and not visto[ny, nx]:
                 visto[ny, nx] = True; fila.append((ny, nx))
+    return visto
 
-    if visto.mean() < 0.04:        # imagem ja era recortada: nao mexe
-        saida = io.BytesIO(); im.save(saida, "PNG"); return saida.getvalue()
 
-    # peca branca (PS5, base do controle) encosta no fundo e seria comida
-    # junto. Se sobrar pouca imagem, e sinal de que o recorte errou.
-    sobrou = 1 - visto.mean()
-    if sobrou < 0.08:
-        saida = io.BytesIO(); im.save(saida, "PNG"); return saida.getvalue()
+FUNDO_FOTO = (246, 247, 249)    # o branco dos ladrilhos
+LADO_FOTO = 600
+OCUPACAO = 0.84
 
-    alfa = Image.fromarray(np.where(visto, 0, a[:, :, 3]).astype(np.uint8))
-    alfa = alfa.filter(ImageFilter.GaussianBlur(0.6))  # borda menos serrilhada
-    im.putalpha(alfa)
-    im = im.crop(im.getbbox() or (0, 0, larg, alt))
-    saida = io.BytesIO(); im.save(saida, "PNG")
+
+def _aparar(im, tolerancia=16):
+    """Corta a margem vazia em volta do produto.
+
+    Nao tenta recortar a peca: so remove as faixas de borda que sao
+    inteiras da cor do fundo. Peca branca em fundo branco continua
+    inteira, porque a faixa onde ela comeca deixa de ser uniforme.
+    """
+    a = np.array(im.convert("RGB")).astype(int)
+    moldura = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]])
+    cor = np.median(moldura, axis=0)
+    if cor.min() < 200:                 # foto de ambiente: nao apara
+        return im
+
+    vazio = np.abs(a - cor).max(axis=2) < tolerancia
+    linhas = np.where(~vazio.all(axis=1))[0]
+    colunas = np.where(~vazio.all(axis=0))[0]
+    if len(linhas) == 0 or len(colunas) == 0:
+        return im
+    folga = 6
+    return im.crop((max(colunas[0] - folga, 0), max(linhas[0] - folga, 0),
+                    min(colunas[-1] + folga, im.width),
+                    min(linhas[-1] + folga, im.height)))
+
+
+def preparar_foto(dados_png, nome=""):
+    """Deixa toda foto do mesmo jeito: fundo claro, mesmo quadrado,
+    mesma folga. O branco das fotos de loja vira parte do layout em
+    vez de um recorte mal feito."""
+    im = Image.open(io.BytesIO(dados_png)).convert("RGB")
+    im.thumbnail((900, 900), Image.LANCZOS)
+    im = _aparar(im)
+
+    alvo = int(LADO_FOTO * OCUPACAO)
+    im.thumbnail((alvo, alvo), Image.LANCZOS)
+    tela = Image.new("RGB", (LADO_FOTO, LADO_FOTO), FUNDO_FOTO)
+    tela.paste(im, ((LADO_FOTO - im.width) // 2, (LADO_FOTO - im.height) // 2))
+
+    saida = io.BytesIO()
+    tela.save(saida, "JPEG", quality=86, optimize=True)
     return saida.getvalue()
 
 
@@ -175,9 +203,9 @@ def carregar():
         arquivo = ""
         url = item.get("imageUrl") or ""
         if url.startswith("data:image/"):
-            arquivo = f"{slug(nome)}.png"
+            arquivo = f"{slug(nome)}.jpg"
             bruto_img = base64.b64decode(url.split(",", 1)[1])
-            (IMG / arquivo).write_bytes(tirar_fundo(bruto_img))
+            (IMG / arquivo).write_bytes(preparar_foto(bruto_img, nome))
 
         vistos[bruto] = {"secao": secao, "nome": nome, "marca": marca,
                          "papel": papel, "img": arquivo, "qtd": 1}
@@ -201,6 +229,7 @@ def montar_css():
   --fundo:      #070b12;
   --painel:     #0e1622;
   --slot:       #111b28;
+  --claro:      #f6f7f9;
   --linha:      #1e2a3a;
   --texto:      #f2efe6;
   --texto-fraco:#8d99ab;
@@ -307,12 +336,11 @@ h1, h2, h3, .slot-num, .painel-nome {{
 .slot {{
   position: relative;
   aspect-ratio: 1;
-  border: 1px solid var(--linha);
+  border: 1px solid #2b3a4d;
   border-radius: var(--raio);
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.035), transparent 60%),
-    var(--slot);
-  padding: 9px;
+  background: var(--claro);
+  padding: 0;
+  overflow: hidden;
   cursor: pointer;
   color: inherit;
   display: grid;
@@ -326,29 +354,33 @@ h1, h2, h3, .slot-num, .painel-nome {{
 
 .slot img {{
   width: 100%; height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  display: block;
   pointer-events: none;
 }}
 
 .slot:hover,
 .slot:focus-visible {{
   border-color: var(--cor);
-  background: var(--slot);
+  box-shadow: 0 0 0 2px var(--cor);
   outline: none;
 }}
 
 .slot[aria-current="true"] {{
   border-color: var(--cor);
-  box-shadow: 0 0 0 1px var(--cor), 0 0 18px -4px var(--cor);
+  box-shadow: 0 0 0 3px var(--cor), 0 10px 24px -10px var(--cor);
 }}
 
 .slot .qtd {{
   position: absolute;
-  right: 4px; bottom: 3px;
+  right: 0; bottom: 0;
+  padding: 1px 7px 2px;
+  border-radius: var(--raio) 0 0 0;
+  background: var(--cor);
+  color: #0a1019;
   font-family: "Chakra Petch", sans-serif;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--cor);
+  font-weight: 700;
 }}
 
 @keyframes entra {{
@@ -368,17 +400,16 @@ h1, h2, h3, .slot-num, .painel-nome {{
 }}
 
 .painel-foto {{
-  aspect-ratio: 4 / 3;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(90% 90% at 50% 25%, rgba(255,255,255,.05), transparent 70%);
+  aspect-ratio: 1;
   border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--claro);
   margin-bottom: 18px;
 }}
 .painel-foto img {{
-  max-width: 88%; max-height: 88%;
-  object-fit: contain;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
 }}
 
 .painel-marca {{
@@ -420,25 +451,46 @@ h1, h2, h3, .slot-num, .painel-nome {{
   transition: opacity .14s ease-out, transform .14s ease-out;
 }}
 
-/* ---------- rodapé ---------- */
+/* ---------- rodapé: os canais primeiro ---------- */
 .fim {{
-  margin-top: 46px;
-  padding-top: 22px;
+  margin-top: 52px;
+  padding-top: 26px;
   border-top: 1px solid var(--linha);
+}}
+
+.canais {{
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 26px;
-  align-items: baseline;
-  font-size: 15px;
+  gap: 12px;
 }}
-.fim a {{
-  color: var(--texto);
+
+.canal {{
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.2px;
   text-decoration: none;
-  border-bottom: 1px solid var(--ouro);
-  padding-bottom: 1px;
+  padding: 13px 24px;
+  border-radius: var(--raio);
+  transition: transform .12s, filter .12s;
 }}
-.fim a:hover, .fim a:focus-visible {{ color: var(--ouro); }}
-.fim p {{ color: var(--texto-fraco); margin-left: auto; }}
+.canal:hover, .canal:focus-visible {{ transform: translateY(-2px); filter: brightness(1.08); }}
+
+.canal.twitch {{ background: var(--ouro); color: #1a1205; }}
+.canal.kick   {{ background: transparent; color: var(--verde); box-shadow: inset 0 0 0 2px var(--verde); }}
+
+.secundario {{
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--texto-fraco);
+  font-size: 15px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--linha);
+  padding-bottom: 2px;
+}}
+.secundario:hover, .secundario:focus-visible {{ color: var(--texto); }}
+
+.fim p {{ margin-top: 18px; color: var(--texto-fraco); font-size: 14px; }}
 
 /* ---------- telas pequenas ---------- */
 @media (max-width: 880px) {{
@@ -537,10 +589,11 @@ def montar_html(secoes, total):
   </div>
 
   <footer class="fim">
-    <a href="https://twitch.tv/thecoinsquash">Twitch</a>
-    <a href="https://kick.com/thecoinsquash">Kick</a>
-    <a href="https://instagram.com/cardoso.dego23">Instagram</a>
-    <a href="https://x.com/thecoinsquash">X</a>
+    <div class="canais">
+      <a class="canal twitch" href="https://twitch.tv/thecoinsquash">Assistir na Twitch</a>
+      <a class="canal kick" href="https://kick.com/thecoinsquash">Assistir na Kick</a>
+    </div>
+    <a class="secundario" href="https://x.com/thecoinsquash">@thecoinsquash no X</a>
     <p>Sem valores, por opção: preço de hardware envelhece rápido.</p>
   </footer>
 </div>

@@ -2,6 +2,7 @@
   --fundo:      #070b12;
   --painel:     #0e1622;
   --slot:       #111b28;
+  --claro:      #f6f7f9;
   --linha:      #1e2a3a;
   --texto:      #f2efe6;
   --texto-fraco:#8d99ab;
@@ -112,12 +113,11 @@ h1, h2, h3, .slot-num, .painel-nome {
 .slot {
   position: relative;
   aspect-ratio: 1;
-  border: 1px solid var(--linha);
+  border: 1px solid #2b3a4d;
   border-radius: var(--raio);
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.035), transparent 60%),
-    var(--slot);
-  padding: 9px;
+  background: var(--claro);
+  padding: 0;
+  overflow: hidden;
   cursor: pointer;
   color: inherit;
   display: grid;
@@ -131,29 +131,33 @@ h1, h2, h3, .slot-num, .painel-nome {
 
 .slot img {
   width: 100%; height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  display: block;
   pointer-events: none;
 }
 
 .slot:hover,
 .slot:focus-visible {
   border-color: var(--cor);
-  background: var(--slot);
+  box-shadow: 0 0 0 2px var(--cor);
   outline: none;
 }
 
 .slot[aria-current="true"] {
   border-color: var(--cor);
-  box-shadow: 0 0 0 1px var(--cor), 0 0 18px -4px var(--cor);
+  box-shadow: 0 0 0 3px var(--cor), 0 10px 24px -10px var(--cor);
 }
 
 .slot .qtd {
   position: absolute;
-  right: 4px; bottom: 3px;
+  right: 0; bottom: 0;
+  padding: 1px 7px 2px;
+  border-radius: var(--raio) 0 0 0;
+  background: var(--cor);
+  color: #0a1019;
   font-family: "Chakra Petch", sans-serif;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--cor);
+  font-weight: 700;
 }
 
 @keyframes entra {
@@ -173,17 +177,16 @@ h1, h2, h3, .slot-num, .painel-nome {
 }
 
 .painel-foto {
-  aspect-ratio: 4 / 3;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(90% 90% at 50% 25%, rgba(255,255,255,.05), transparent 70%);
+  aspect-ratio: 1;
   border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--claro);
   margin-bottom: 18px;
 }
 .painel-foto img {
-  max-width: 88%; max-height: 88%;
-  object-fit: contain;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .painel-marca {
@@ -225,25 +228,46 @@ h1, h2, h3, .slot-num, .painel-nome {
   transition: opacity .14s ease-out, transform .14s ease-out;
 }
 
-/* ---------- rodapé ---------- */
+/* ---------- rodapé: os canais primeiro ---------- */
 .fim {
-  margin-top: 46px;
-  padding-top: 22px;
+  margin-top: 52px;
+  padding-top: 26px;
   border-top: 1px solid var(--linha);
+}
+
+.canais {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 26px;
-  align-items: baseline;
-  font-size: 15px;
+  gap: 12px;
 }
-.fim a {
-  color: var(--texto);
+
+.canal {
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.2px;
   text-decoration: none;
-  border-bottom: 1px solid var(--ouro);
-  padding-bottom: 1px;
+  padding: 13px 24px;
+  border-radius: var(--raio);
+  transition: transform .12s, filter .12s;
 }
-.fim a:hover, .fim a:focus-visible { color: var(--ouro); }
-.fim p { color: var(--texto-fraco); margin-left: auto; }
+.canal:hover, .canal:focus-visible { transform: translateY(-2px); filter: brightness(1.08); }
+
+.canal.twitch { background: var(--ouro); color: #1a1205; }
+.canal.kick   { background: transparent; color: var(--verde); box-shadow: inset 0 0 0 2px var(--verde); }
+
+.secundario {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--texto-fraco);
+  font-size: 15px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--linha);
+  padding-bottom: 2px;
+}
+.secundario:hover, .secundario:focus-visible { color: var(--texto); }
+
+.fim p { margin-top: 18px; color: var(--texto-fraco); font-size: 14px; }
 
 /* ---------- telas pequenas ---------- */
 @media (max-width: 880px) {
