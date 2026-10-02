@@ -1,10 +1,10 @@
 """
-Gera o site do setup do thecoinsquash.
+Site do setup em formato de PERCURSO: a pessoa rola e as pecas
+passam de lado, uma de cada vez.
 
-Organizado em tres camadas:
-  MODELO     le o JSON, filtra o que foi comprado, extrai as imagens
-  VISAO      monta o HTML e o CSS
-  CONTROLE   junta tudo e grava os arquivos
+  MODELO     le o JSON, prepara as fotos
+  VISAO      monta HTML e CSS
+  CONTROLE   grava os arquivos
 """
 import base64
 import html
@@ -13,20 +13,18 @@ import json
 import pathlib
 import re
 import shutil
-from collections import deque
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 ENTRADA = pathlib.Path("/mnt/user-data/uploads/setup-inventory-2026-10-02.json")
 LOGO = pathlib.Path("/mnt/user-data/outputs/logo.png")
 SAIDA = pathlib.Path("/mnt/user-data/outputs/setup-site")
 IMG = SAIDA / "img"
 
-
-# ===========================================================
-#  MODELO
-# ===========================================================
+FUNDO_FOTO = (246, 247, 249)
+LADO_FOTO = 760
+OCUPACAO = 0.84
 
 # nome no JSON -> (secao, nome exibido, marca, o que faz)
 CURADORIA = {
@@ -85,560 +83,547 @@ CURADORIA = {
 }
 
 SECOES = ["PC", "Periféricos", "Monitores", "Console", "Estação"]
-
-# cada secao tem sua cor, como raridade de item
 CORES = {
     "PC":          "#efa02a",
     "Periféricos": "#9bd45f",
     "Monitores":   "#55c8e8",
-    "Console":     "#a981f0",   # o roxo do DualSense
+    "Console":     "#a981f0",
     "Estação":     "#8e99ab",
 }
 
 
-LADO_FOTO = 600          # toda foto sai neste quadrado
-OCUPACAO = 0.86          # quanto da area a peca pode ocupar
-
-
-def _inundar(rgb, cinza_im, fundo_cor, tolerancia, limite_borda):
-    """Espalha pelo fundo a partir das bordas, parando no contorno
-    da peca. Devolve a mascara do que e fundo."""
-    alt, larg = rgb.shape[:2]
-    borda = np.array(cinza_im.filter(ImageFilter.FIND_EDGES))
-    borda[:2, :] = 0; borda[-2:, :] = 0; borda[:, :2] = 0; borda[:, -2:] = 0
-    candidato = (np.abs(rgb - fundo_cor).max(axis=2) < tolerancia) & (borda <= limite_borda)
-
-    visto = np.zeros((alt, larg), dtype=bool)
-    fila = deque()
-    for x in range(larg):
-        for y in (0, alt - 1):
-            if candidato[y, x] and not visto[y, x]:
-                visto[y, x] = True; fila.append((y, x))
-    for y in range(alt):
-        for x in (0, larg - 1):
-            if candidato[y, x] and not visto[y, x]:
-                visto[y, x] = True; fila.append((y, x))
-    while fila:
-        y, x = fila.popleft()
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-            ny, nx = y + dy, x + dx
-            if 0 <= ny < alt and 0 <= nx < larg and candidato[ny, nx] and not visto[ny, nx]:
-                visto[ny, nx] = True; fila.append((ny, nx))
-    return visto
-
-
-FUNDO_FOTO = (246, 247, 249)    # o branco dos ladrilhos
-LADO_FOTO = 600
-OCUPACAO = 0.84
-
-
-def _aparar(im, tolerancia=16):
-    """Corta a margem vazia em volta do produto.
-
-    Nao tenta recortar a peca: so remove as faixas de borda que sao
-    inteiras da cor do fundo. Peca branca em fundo branco continua
-    inteira, porque a faixa onde ela comeca deixa de ser uniforme.
-    """
-    a = np.array(im.convert("RGB")).astype(int)
-    moldura = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]])
-    cor = np.median(moldura, axis=0)
-    if cor.min() < 200:                 # foto de ambiente: nao apara
-        return im
-
-    vazio = np.abs(a - cor).max(axis=2) < tolerancia
-    linhas = np.where(~vazio.all(axis=1))[0]
-    colunas = np.where(~vazio.all(axis=0))[0]
-    if len(linhas) == 0 or len(colunas) == 0:
-        return im
-    folga = 6
-    return im.crop((max(colunas[0] - folga, 0), max(linhas[0] - folga, 0),
-                    min(colunas[-1] + folga, im.width),
-                    min(linhas[-1] + folga, im.height)))
-
-
-def preparar_foto(dados_png, nome=""):
-    """Deixa toda foto do mesmo jeito: fundo claro, mesmo quadrado,
-    mesma folga. O branco das fotos de loja vira parte do layout em
-    vez de um recorte mal feito."""
-    im = Image.open(io.BytesIO(dados_png)).convert("RGB")
-    im.thumbnail((900, 900), Image.LANCZOS)
-    im = _aparar(im)
-
-    alvo = int(LADO_FOTO * OCUPACAO)
-    im.thumbnail((alvo, alvo), Image.LANCZOS)
-    tela = Image.new("RGB", (LADO_FOTO, LADO_FOTO), FUNDO_FOTO)
-    tela.paste(im, ((LADO_FOTO - im.width) // 2, (LADO_FOTO - im.height) // 2))
-
-    saida = io.BytesIO()
-    tela.save(saida, "JPEG", quality=86, optimize=True)
-    return saida.getvalue()
-
-
+# ===========================================================
+#  MODELO
+# ===========================================================
 def slug(texto):
     texto = re.sub(r"[^a-z0-9]+", "-", texto.lower().strip())
     return re.sub(r"-+", "-", texto).strip("-")
 
 
+def _aparar(im, tolerancia=16):
+    a = np.array(im.convert("RGB")).astype(int)
+    moldura = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]])
+    cor = np.median(moldura, axis=0)
+    if cor.min() < 200:
+        return im
+    vazio = np.abs(a - cor).max(axis=2) < tolerancia
+    linhas = np.where(~vazio.all(axis=1))[0]
+    colunas = np.where(~vazio.all(axis=0))[0]
+    if len(linhas) == 0 or len(colunas) == 0:
+        return im
+    f = 6
+    return im.crop((max(colunas[0] - f, 0), max(linhas[0] - f, 0),
+                    min(colunas[-1] + f, im.width), min(linhas[-1] + f, im.height)))
+
+
+def preparar_foto(dados):
+    im = Image.open(io.BytesIO(dados)).convert("RGB")
+    im.thumbnail((1100, 1100), Image.LANCZOS)
+    im = _aparar(im)
+    alvo = int(LADO_FOTO * OCUPACAO)
+    im.thumbnail((alvo, alvo), Image.LANCZOS)
+    tela = Image.new("RGB", (LADO_FOTO, LADO_FOTO), FUNDO_FOTO)
+    tela.paste(im, ((LADO_FOTO - im.width) // 2, (LADO_FOTO - im.height) // 2))
+    saida = io.BytesIO()
+    tela.save(saida, "JPEG", quality=86, optimize=True)
+    return saida.getvalue()
+
+
 def carregar():
-    """Devolve {secao: [peca, ...]} e o total de pecas."""
     IMG.mkdir(parents=True, exist_ok=True)
     for f in IMG.glob("*"):
         f.unlink()
 
     dados = json.loads(ENTRADA.read_text(encoding="utf-8"))
     vistos = {}
-
     for item in dados["items"]:
         if item.get("status") != "owned":
             continue
         bruto = item["name"].strip()
-        if bruto in vistos:                     # peca repetida: conta junto
+        if bruto in vistos:
             vistos[bruto]["qtd"] += 1
             continue
         if bruto not in CURADORIA:
-            print("  AVISO: peca sem curadoria ->", bruto)
+            print("  sem curadoria:", bruto)
             continue
-
         secao, nome, marca, papel = CURADORIA[bruto]
         arquivo = ""
         url = item.get("imageUrl") or ""
         if url.startswith("data:image/"):
             arquivo = f"{slug(nome)}.jpg"
-            bruto_img = base64.b64decode(url.split(",", 1)[1])
-            (IMG / arquivo).write_bytes(preparar_foto(bruto_img, nome))
+            (IMG / arquivo).write_bytes(preparar_foto(base64.b64decode(url.split(",", 1)[1])))
+        vistos[bruto] = dict(secao=secao, nome=nome, marca=marca,
+                             papel=papel, img=arquivo, qtd=1)
 
-        vistos[bruto] = {"secao": secao, "nome": nome, "marca": marca,
-                         "papel": papel, "img": arquivo, "qtd": 1}
-
-    secoes = {s: [] for s in SECOES}
-    for peca in vistos.values():
-        secoes[peca["secao"]].append(peca)
-    total = sum(len(v) for v in secoes.values())
-    return secoes, total
+    ordem = {s: i for i, s in enumerate(SECOES)}
+    pecas = sorted(vistos.values(), key=lambda p: ordem[p["secao"]])
+    return pecas
 
 
 # ===========================================================
 #  VISAO
 # ===========================================================
-def montar_css():
-    cores = "\n".join(
-        f'  --cor-{slug(s)}: {c};' for s, c in CORES.items()
-    )
-    return f"""
-:root {{
-  --fundo:      #070b12;
-  --painel:     #0e1622;
-  --slot:       #111b28;
-  --claro:      #f6f7f9;
-  --linha:      #1e2a3a;
-  --texto:      #f2efe6;
-  --texto-fraco:#8d99ab;
-  --ouro:       #efa02a;
-  --verde:      #9bd45f;
-{cores}
-  --raio: 4px;
-}}
+CSS = """
+:root {
+  --fundo:  #060a10;
+  --tinta:  #f3f0e8;
+  --fraco:  #8a95a6;
+  --claro:  #f6f7f9;
+  --linha:  rgba(255,255,255,.1);
+  --ouro:   #efa02a;
+  --verde:  #9bd45f;
+}
 
-* {{ box-sizing: border-box; margin: 0; padding: 0; }}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {{
+html { scroll-behavior: auto; }
+
+body {
   background: var(--fundo);
-  color: var(--texto);
+  color: var(--tinta);
   font-family: "Space Grotesk", system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}}
+  overflow-x: hidden;
+}
 
-h1, h2, h3, .slot-num, .painel-nome {{
+h1, h2, .nome, .contador, .canal {
   font-family: "Chakra Petch", system-ui, sans-serif;
   font-weight: 600;
-}}
+}
 
-.quadro {{
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 36px 24px 72px;
-}}
-
-/* ---------- cabeçalho: ficha do jogador ---------- */
-.ficha {{
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--linha);
-}}
-
-.ficha img {{
-  width: 76px; height: 76px;
-  flex: none;
-  filter: drop-shadow(0 6px 16px rgba(239,160,42,.25));
-}}
-
-.ficha h1 {{
-  font-size: 30px;
-  letter-spacing: -.5px;
-  line-height: 1.1;
-}}
-.ficha h1 .c {{ color: var(--ouro); }}
-.ficha h1 .s {{ color: var(--verde); }}
-
-.ficha p {{
-  margin-top: 2px;
-  color: var(--texto-fraco);
-  font-size: 15px;
-}}
-
-.ficha .horario {{
-  margin-left: auto;
-  text-align: right;
-  color: var(--texto-fraco);
-  font-size: 14px;
-  line-height: 1.6;
-}}
-.ficha .horario b {{ color: var(--texto); font-weight: 500; }}
-
-/* ---------- corpo: grade de slots + painel ---------- */
-.corpo {{
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 40px;
-  margin-top: 30px;
-  align-items: start;
-}}
-
-.grupo + .grupo {{ margin-top: 26px; }}
-
-.grupo h2 {{
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  margin-bottom: 10px;
-  color: var(--cor);
-}}
-.grupo h2 span {{
-  color: var(--texto-fraco);
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-}}
-
-.slots {{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 8px;
-}}
-
-.slot {{
-  position: relative;
-  aspect-ratio: 1;
-  border: 1px solid #2b3a4d;
-  border-radius: var(--raio);
-  background: var(--claro);
-  padding: 0;
-  overflow: hidden;
-  cursor: pointer;
-  color: inherit;
+/* ---------- abertura ---------- */
+.abertura {
+  height: 100vh;
   display: grid;
   place-items: center;
-  transition: border-color .12s, background .12s;
-  /* a entrada em sequencia acontece uma vez, no carregamento */
-  opacity: 0;
-  animation: entra .28s ease-out forwards;
-  animation-delay: var(--atraso);
-}}
+  text-align: center;
+  padding: 24px;
+  position: relative;
+}
 
-.slot img {{
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-}}
+.abertura img {
+  width: 132px;
+  filter: drop-shadow(0 10px 30px rgba(239,160,42,.3));
+  animation: flutua 5s ease-in-out infinite;
+}
 
-.slot:hover,
-.slot:focus-visible {{
-  border-color: var(--cor);
-  box-shadow: 0 0 0 2px var(--cor);
-  outline: none;
-}}
+@keyframes flutua {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-9px) rotate(1deg); }
+}
 
-.slot[aria-current="true"] {{
-  border-color: var(--cor);
-  box-shadow: 0 0 0 3px var(--cor), 0 10px 24px -10px var(--cor);
-}}
+.abertura h1 {
+  margin-top: 18px;
+  font-size: clamp(38px, 7vw, 76px);
+  letter-spacing: -2px;
+  line-height: .95;
+}
+.abertura h1 .c { color: var(--ouro); }
+.abertura h1 .s { color: var(--verde); }
 
-.slot .qtd {{
+.abertura p {
+  margin-top: 14px;
+  color: var(--fraco);
+  font-size: 17px;
+  max-width: 34ch;
+}
+
+.rolar {
   position: absolute;
-  right: 0; bottom: 0;
-  padding: 1px 7px 2px;
-  border-radius: var(--raio) 0 0 0;
-  background: var(--cor);
-  color: #0a1019;
-  font-family: "Chakra Petch", sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-}}
+  bottom: 34px; left: 50%;
+  transform: translateX(-50%);
+  color: var(--fraco);
+  font-size: 13px;
+  letter-spacing: .14em;
+}
+.rolar i {
+  display: block;
+  width: 1px; height: 30px;
+  margin: 10px auto 0;
+  background: linear-gradient(var(--fraco), transparent);
+  animation: desce 1.8s ease-in-out infinite;
+}
+@keyframes desce {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  50%  { transform: scaleY(1); transform-origin: top; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
 
-@keyframes entra {{
-  from {{ opacity: 0; transform: translateY(6px) scale(.96); }}
-  to   {{ opacity: 1; transform: none; }}
-}}
+/* ---------- o percurso ---------- */
+.trilho { position: relative; }
 
-/* ---------- painel do item ---------- */
-.painel {{
+.palco {
   position: sticky;
-  top: 28px;
-  border: 1px solid var(--linha);
-  border-top: 2px solid var(--cor, var(--ouro));
-  border-radius: var(--raio);
-  background: var(--painel);
-  padding: 22px;
-}}
+  top: 0;
+  height: 100vh;
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
 
-.painel-foto {{
+.cena {
+  width: 100vw;
+  height: 100vh;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 60px;
+  padding: 0 clamp(28px, 7vw, 120px);
+  position: relative;
+  overflow: hidden;
+}
+
+.cena.espelhada .foto  { order: 2; }
+.cena.espelhada .texto { order: 1; }
+
+/* a categoria passa ao fundo, mais devagar que a peca */
+.marcador {
+  position: absolute;
+  left: 0; bottom: 6vh;
+  font-family: "Chakra Petch", sans-serif;
+  font-weight: 700;
+  font-size: clamp(90px, 17vw, 230px);
+  line-height: .8;
+  letter-spacing: -.04em;
+  color: var(--cor);
+  opacity: .07;
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.foto {
+  justify-self: center;
+  width: min(42vw, 50vh);
   aspect-ratio: 1;
-  border-radius: var(--raio);
+  border-radius: 6px;
   overflow: hidden;
   background: var(--claro);
-  margin-bottom: 18px;
-}}
-.painel-foto img {{
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-}}
+  box-shadow: 0 30px 70px -30px rgba(0,0,0,.9), 0 0 0 1px var(--linha);
+  will-change: transform;
+}
+.foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.painel-marca {{
-  font-size: 13px;
-  letter-spacing: .06em;
-  color: var(--cor, var(--ouro));
-  min-height: 19px;
-}}
+.texto { max-width: 46ch; will-change: transform; }
 
-.painel-nome {{
-  font-size: 27px;
-  line-height: 1.15;
-  letter-spacing: -.4px;
-  margin: 2px 0 10px;
-}}
+.marca {
+  color: var(--cor);
+  font-size: 14px;
+  letter-spacing: .14em;
+  min-height: 20px;
+}
 
-.painel-papel {{
-  color: var(--texto-fraco);
-  font-size: 15.5px;
-  max-width: 46ch;
-}}
+.nome {
+  font-size: clamp(34px, 4.6vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -1.4px;
+  margin: 6px 0 14px;
+}
 
-.painel-rodape {{
-  margin-top: 18px;
+.papel {
+  color: var(--fraco);
+  font-size: clamp(16px, 1.4vw, 20px);
+  line-height: 1.45;
+}
+
+.extra {
+  margin-top: 22px;
   padding-top: 14px;
   border-top: 1px solid var(--linha);
-  font-size: 13px;
-  color: var(--texto-fraco);
-}}
+  color: var(--fraco);
+  font-size: 14px;
+}
+.extra b { color: var(--cor); font-weight: 500; }
 
-/* a troca de item e a unica animacao depois do carregamento,
-   e ela responde ao que a pessoa faz */
-.painel.trocando .painel-foto,
-.painel.trocando .painel-texto {{
+/* ---------- barra de progresso ---------- */
+.progresso {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 clamp(20px, 5vw, 60px);
+  background: linear-gradient(transparent, rgba(6,10,16,.92) 45%);
+  pointer-events: none;
   opacity: 0;
-  transform: translateY(4px);
-}}
-.painel-foto, .painel-texto {{
-  transition: opacity .14s ease-out, transform .14s ease-out;
-}}
+  transition: opacity .3s;
+  z-index: 5;
+}
+.progresso.ativa { opacity: 1; }
 
-/* ---------- rodapé: os canais primeiro ---------- */
-.fim {{
-  margin-top: 52px;
-  padding-top: 26px;
-  border-top: 1px solid var(--linha);
-}}
+.barra {
+  flex: 1;
+  height: 2px;
+  background: rgba(255,255,255,.12);
+  position: relative;
+}
+.barra span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--cor-atual, var(--ouro));
+  transition: background .4s;
+}
+.contador {
+  font-size: 14px;
+  color: var(--fraco);
+  font-variant-numeric: tabular-nums;
+}
+.contador b { color: var(--tinta); font-weight: 600; }
 
-.canais {{
+/* ---------- fim ---------- */
+.fim {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 80px 24px;
+}
+.fim h2 { font-size: clamp(28px, 4vw, 48px); letter-spacing: -1px; }
+.fim p { margin-top: 12px; color: var(--fraco); }
+
+.canais {
+  margin-top: 30px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-}}
-
-.canal {{
-  font-family: "Chakra Petch", sans-serif;
+  justify-content: center;
+}
+.canal {
   font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -.2px;
   text-decoration: none;
-  padding: 13px 24px;
-  border-radius: var(--raio);
+  padding: 14px 26px;
+  border-radius: 6px;
   transition: transform .12s, filter .12s;
-}}
-.canal:hover, .canal:focus-visible {{ transform: translateY(-2px); filter: brightness(1.08); }}
+}
+.canal:hover, .canal:focus-visible { transform: translateY(-2px); filter: brightness(1.08); }
+.canal.twitch { background: #9146ff; color: #fff; }
+.canal.kick   { color: var(--verde); box-shadow: inset 0 0 0 2px var(--verde); }
 
-.canal.twitch {{ background: #9146ff; color: #fff; }}
-.canal.kick   {{ background: transparent; color: var(--verde); box-shadow: inset 0 0 0 2px var(--verde); }}
-
-.secundario {{
+.secundario {
   display: inline-block;
-  margin-top: 16px;
-  color: var(--texto-fraco);
+  margin-top: 20px;
+  color: var(--fraco);
   font-size: 15px;
   text-decoration: none;
   border-bottom: 1px solid var(--linha);
-  padding-bottom: 2px;
-}}
-.secundario:hover, .secundario:focus-visible {{ color: var(--texto); }}
+}
+.secundario:hover, .secundario:focus-visible { color: var(--tinta); }
 
-.fim p {{ margin-top: 18px; color: var(--texto-fraco); font-size: 14px; }}
+.nota { margin-top: 26px; color: var(--fraco); font-size: 13px; }
 
-/* ---------- telas pequenas ---------- */
-@media (max-width: 880px) {{
-  .corpo {{ grid-template-columns: 1fr; gap: 24px; }}
-  .painel {{ position: static; order: -1; }}
-  .ficha {{ flex-wrap: wrap; }}
-  .ficha .horario {{ margin-left: 0; text-align: left; width: 100%; }}
-  .slots {{ grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }}
-}}
+/* ---------- celular: vira sequencia vertical ---------- */
+@media (max-width: 900px) {
+  .palco { position: static; width: auto; flex-direction: column; transform: none !important; }
+  .trilho { height: auto !important; }
+  .cena {
+    width: 100%;
+    height: auto;
+    min-height: 92vh;
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding: 70px 22px;
+    align-content: center;
+  }
+  .cena.espelhada .foto, .cena.espelhada .texto { order: initial; }
+  .foto { width: min(76vw, 42vh); }
+  .marcador { font-size: 74px; bottom: 2vh; opacity: .06; transform: none !important; }
+  .progresso { display: none; }
+}
 
-@media (prefers-reduced-motion: reduce) {{
-  * {{ animation: none !important; transition: none !important; }}
-  .slot {{ opacity: 1; }}
-}}
+@media (prefers-reduced-motion: reduce) {
+  .palco { position: static; width: auto; flex-direction: column; transform: none !important; }
+  .trilho { height: auto !important; }
+  .cena { width: 100%; height: auto; min-height: 90vh; }
+  .abertura img, .rolar i { animation: none; }
+  .marcador, .foto, .texto { transform: none !important; }
+}
 """
 
 
-def montar_html(secoes, total):
+def montar_html(pecas):
     e = html.escape
-    grupos, dados_js, i = [], [], 0
-    primeiro = None
-
-    for secao in SECOES:
-        pecas = secoes[secao]
-        if not pecas:
-            continue
-        cor = CORES[secao]
-        slots = []
-        for peca in pecas:
-            if primeiro is None:
-                primeiro = i
-            foto = (f'<img src="img/{peca["img"]}" alt="">' if peca["img"] else "")
-            qtd = f'<span class="qtd">{peca["qtd"]}</span>' if peca["qtd"] > 1 else ""
-            slots.append(
-                f'<button class="slot" type="button" data-i="{i}" '
-                f'style="--atraso:{i * 22}ms" '
-                f'aria-label="{e(peca["nome"])}">{foto}{qtd}</button>'
-            )
-            dados_js.append({
-                "nome": peca["nome"], "marca": peca["marca"], "papel": peca["papel"],
-                "img": peca["img"], "cor": cor, "secao": secao, "qtd": peca["qtd"],
-            })
-            i += 1
-
-        grupos.append(f"""    <section class="grupo" style="--cor:{cor}">
-      <h2>{e(secao)} <span>{len(pecas)}</span></h2>
-      <div class="slots">
-{chr(10).join("        " + s for s in slots)}
-      </div>
-    </section>""")
+    cenas = []
+    for i, p in enumerate(pecas):
+        cor = CORES[p["secao"]]
+        qtd = f' · <b>{p["qtd"]} unidades</b>' if p["qtd"] > 1 else ""
+        foto = (f'<img src="img/{p["img"]}" alt="{e(p["nome"])}" loading="lazy">'
+                if p["img"] else "")
+        cenas.append(f"""      <section class="cena{' espelhada' if i % 2 else ''}"
+               style="--cor:{cor}" data-cor="{cor}" data-secao="{e(p['secao'])}">
+        <div class="marcador" aria-hidden="true">{e(p['secao'])}</div>
+        <div class="foto">{foto}</div>
+        <div class="texto">
+          <div class="marca">{e(p['marca'])}</div>
+          <h2 class="nome">{e(p['nome'])}</h2>
+          <p class="papel">{e(p['papel'])}</p>
+          <div class="extra">{e(p['secao'])}{qtd}</div>
+        </div>
+      </section>""")
 
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Inventário · thecoinsquash</title>
-<meta name="description" content="As peças que fazem a live do thecoinsquash funcionar.">
-<link rel="icon" href="img/favicon.png">
-<meta property="og:title" content="Inventário · thecoinsquash">
-<meta property="og:description" content="As peças que fazem a live funcionar.">
+<title>Bancada · thecoinsquash</title>
+<meta name="description" content="Atravesse a bancada do thecoinsquash, peça por peça.">
+<link rel="icon" href="img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
-<div class="quadro">
 
-  <header class="ficha">
-    <img src="img/logo.png" alt="" width="76" height="76">
-    <div>
-      <h1>the<span class="c">coin</span><span class="s">squash</span></h1>
-      <p>{total} peças em uso. Passe por uma delas para ver o que faz.</p>
-    </div>
-    <div class="horario">
-      <b>Terça a sexta</b>, 21h30<br>
-      <b>Sábado e domingo</b>, 16h
-    </div>
-  </header>
-
-  <div class="corpo">
-    <div class="colecao">
-{chr(10).join(grupos)}
-    </div>
-
-    <aside class="painel" id="painel" aria-live="polite">
-      <div class="painel-foto"><img id="p-img" src="" alt=""></div>
-      <div class="painel-texto">
-        <div class="painel-marca" id="p-marca"></div>
-        <h3 class="painel-nome" id="p-nome"></h3>
-        <p class="painel-papel" id="p-papel"></p>
-        <div class="painel-rodape" id="p-rodape"></div>
-      </div>
-    </aside>
+<header class="abertura">
+  <div>
+    <img src="img/logo.png" alt="" width="132" height="132">
+    <h1>the<span class="c">coin</span><span class="s">squash</span></h1>
+    <p>A bancada inteira, peça por peça. São {len(pecas)}, e todas trabalham quando a live começa.</p>
   </div>
+  <div class="rolar">role para atravessar<i></i></div>
+</header>
 
-  <footer class="fim">
+<main class="trilho" id="trilho">
+  <div class="palco" id="palco">
+{chr(10).join(cenas)}
+  </div>
+</main>
+
+<div class="progresso" id="progresso" aria-hidden="true">
+  <div class="barra"><span id="preenche" style="width:0%"></span></div>
+  <div class="contador"><b id="atual">1</b> / {len(pecas)}</div>
+</div>
+
+<footer class="fim">
+  <div>
+    <h2>Chegou ao fim da bancada.</h2>
+    <p>O resto só acontece ao vivo.</p>
     <div class="canais">
       <a class="canal twitch" href="https://twitch.tv/thecoinsquash">Assistir na Twitch</a>
       <a class="canal kick" href="https://kick.com/thecoinsquash">Assistir na Kick</a>
     </div>
     <a class="secundario" href="https://x.com/thecoinsquash">@thecoinsquash no X</a>
-    <p>Sem valores, por opção: preço de hardware envelhece rápido.</p>
-  </footer>
-</div>
+    <p class="nota">Terça a sexta, 21h30 · Sábado e domingo, 16h</p>
+  </div>
+</footer>
 
 <script>
-const PECAS = {json.dumps(dados_js, ensure_ascii=False)};
-const painel = document.getElementById("painel");
-const campos = {{
-  img: document.getElementById("p-img"),
-  marca: document.getElementById("p-marca"),
-  nome: document.getElementById("p-nome"),
-  papel: document.getElementById("p-papel"),
-  rodape: document.getElementById("p-rodape"),
-}};
-const slots = [...document.querySelectorAll(".slot")];
-let atual = -1;
+(function () {{
+  const trilho = document.getElementById("trilho");
+  const palco  = document.getElementById("palco");
+  const cenas  = [...palco.querySelectorAll(".cena")];
+  const barra  = document.getElementById("preenche");
+  const atual  = document.getElementById("atual");
+  const painel = document.getElementById("progresso");
 
-function mostrar(i, fixar) {{
-  if (i === atual) return;
-  atual = i;
-  const p = PECAS[i];
-  painel.classList.add("trocando");
-  window.setTimeout(() => {{
-    painel.style.setProperty("--cor", p.cor);
-    campos.img.src = p.img ? "img/" + p.img : "";
-    campos.img.alt = p.nome;
-    campos.marca.textContent = p.marca;
-    campos.nome.textContent = p.nome;
-    campos.papel.textContent = p.papel;
-    campos.rodape.textContent = p.secao + (p.qtd > 1 ? " · " + p.qtd + " unidades" : "");
-    painel.classList.remove("trocando");
-  }}, 140);
-  if (fixar) {{
-    slots.forEach(s => s.removeAttribute("aria-current"));
-    slots[i].setAttribute("aria-current", "true");
+  const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const estreito     = window.matchMedia("(max-width: 900px)");
+
+  function horizontal() {{ return !semMovimento.matches && !estreito.matches; }}
+
+  function medir() {{
+    if (!horizontal()) {{ trilho.style.height = ""; palco.style.transform = ""; return; }}
+    // cada peca ocupa uma tela de rolagem
+    trilho.style.height = (cenas.length * 100) + "vh";
+    desenhar();
   }}
-}}
 
-slots.forEach((slot, i) => {{
-  slot.addEventListener("mouseenter", () => mostrar(i, true));
-  slot.addEventListener("focus", () => mostrar(i, true));
-  slot.addEventListener("click", () => mostrar(i, true));
-}});
+  let pedido = null;
+  function aoRolar() {{
+    if (pedido) return;
+    pedido = requestAnimationFrame(() => {{ pedido = null; desenhar(); }});
+  }}
 
-mostrar({primeiro or 0}, true);
+  function desenhar() {{
+    const topo = trilho.offsetTop;
+    const curso = trilho.offsetHeight - window.innerHeight;
+    let p = (window.scrollY - topo) / curso;
+    p = Math.min(Math.max(p, 0), 1);
+
+    const dentro = window.scrollY > topo - window.innerHeight * .4 &&
+                   window.scrollY < topo + curso + window.innerHeight * .4;
+    painel.classList.toggle("ativa", dentro);
+
+    if (horizontal()) {{
+      palco.style.transform = "translate3d(" + (-p * (cenas.length - 1) * 100) + "vw,0,0)";
+    }}
+
+    const i = Math.min(Math.round(p * (cenas.length - 1)), cenas.length - 1);
+    atual.textContent = i + 1;
+    barra.style.width = (p * 100).toFixed(2) + "%";
+    const cor = cenas[i].dataset.cor;
+    document.documentElement.style.setProperty("--cor-atual", cor);
+
+    if (!horizontal()) return;
+
+    // profundidade: foto, texto e o nome da categoria andam
+    // em velocidades diferentes conforme a cena passa pelo centro
+    const passo = 1 / (cenas.length - 1);
+    cenas.forEach((cena, j) => {{
+      const d = (p - j * passo) / passo;          // -1 entrando, 0 no centro, 1 saindo
+      if (Math.abs(d) > 1.6) return;
+      const foto = cena.querySelector(".foto");
+      const texto = cena.querySelector(".texto");
+      const marcador = cena.querySelector(".marcador");
+      if (foto)  foto.style.transform  = "translate3d(" + (d * 5) + "vw,0,0) scale(" + (1 - Math.abs(d) * .05) + ")";
+      if (texto) texto.style.transform = "translate3d(" + (d * -2.5) + "vw,0,0)";
+      if (marcador) marcador.style.transform = "translate3d(" + (d * 20) + "vw,0,0)";
+      const op = Math.max(1 - Math.abs(d) * 1.9, 0);   // a vizinha some rapido
+      if (foto) foto.style.opacity = op;
+      if (texto) texto.style.opacity = op;
+    }});
+  }}
+
+  // ---- encaixe: ao soltar a rolagem, assenta na peca mais proxima.
+  // Sem isto, parar no meio deixa duas pecas pela metade na tela.
+  let ocioso = null, encaixando = false;
+
+  function encaixar() {{
+    if (!horizontal() || encaixando) return;
+    const topo = trilho.offsetTop;
+    const curso = trilho.offsetHeight - window.innerHeight;
+    const y = window.scrollY;
+    if (y < topo || y > topo + curso) return;
+
+    const passo = curso / (cenas.length - 1);
+    const i = Math.round((y - topo) / passo);
+    const alvo = Math.round(topo + i * passo);
+    if (Math.abs(alvo - y) < 4) return;
+
+    encaixando = true;
+    window.scrollTo({{ top: alvo, behavior: "smooth" }});
+    window.setTimeout(() => {{ encaixando = false; }}, 700);
+  }}
+
+  window.addEventListener("scroll", () => {{
+    aoRolar();
+    window.clearTimeout(ocioso);
+    ocioso = window.setTimeout(encaixar, 170);
+  }}, {{ passive: true }});
+
+  // teclado: setas e Page andam de peca em peca
+  window.addEventListener("keydown", (ev) => {{
+    if (!horizontal()) return;
+    const mapa = {{ ArrowRight: 1, ArrowDown: 1, PageDown: 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }};
+    const passoTecla = mapa[ev.key];
+    if (!passoTecla) return;
+    const topo = trilho.offsetTop;
+    const curso = trilho.offsetHeight - window.innerHeight;
+    if (window.scrollY < topo || window.scrollY > topo + curso) return;
+    ev.preventDefault();
+    const passo = curso / (cenas.length - 1);
+    const i = Math.round((window.scrollY - topo) / passo) + passoTecla;
+    const limite = Math.min(Math.max(i, 0), cenas.length - 1);
+    window.scrollTo({{ top: Math.round(topo + limite * passo), behavior: "smooth" }});
+  }});
+
+  window.addEventListener("resize", medir);
+  semMovimento.addEventListener("change", medir);
+  estreito.addEventListener("change", medir);
+  medir();
+}})();
 </script>
 </body>
 </html>
@@ -649,17 +634,12 @@ mostrar({primeiro or 0}, true);
 #  CONTROLE
 # ===========================================================
 def main():
-    secoes, total = carregar()
-    for s in SECOES:
-        print(f"  {s:12s} {len(secoes[s])}")
-    print("  total:", total)
-
+    pecas = carregar()
+    print("  peças:", len(pecas))
     shutil.copy(LOGO, IMG / "logo.png")
-    shutil.copy(LOGO, IMG / "favicon.png")
-
-    (SAIDA / "index.html").write_text(montar_html(secoes, total), encoding="utf-8")
-    (SAIDA / "estilo.css").write_text(montar_css().strip() + "\n", encoding="utf-8")
-    print("  site gravado em", SAIDA)
+    (SAIDA / "index.html").write_text(montar_html(pecas), encoding="utf-8")
+    (SAIDA / "estilo.css").write_text(CSS.strip() + "\n", encoding="utf-8")
+    print("  gravado em", SAIDA)
 
 
 if __name__ == "__main__":
