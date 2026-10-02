@@ -1,0 +1,73 @@
+===========================================================
+  BANCADA — O SITE DO SETUP EM FORMATO DE PERCURSO
+===========================================================
+
+ARQUIVOS
+  index.html      a pagina
+  estilo.css      o visual
+  gerar_site.py   refaz tudo a partir do seu JSON
+  img/            as fotos das pecas e o logo
+
+Sem build, sem dependencia no site. E so subir a pasta.
+
+
+PUBLICAR NO VERCEL
+-------------------
+  vercel.com > Add New > Project > arraste a pasta inteira.
+  Ou suba num repositorio do GitHub e importe: ai o site
+  atualiza sozinho toda vez que voce editar la.
+  Framework "Other", sem comando de build.
+
+  IMPORTANTE: troque a pasta INTEIRA, nao arquivo por arquivo.
+  E de Ctrl+F5 no navegador, senao ele mostra a versao velha
+  guardada em cache.
+
+
+COMO FUNCIONA
+--------------
+  A pessoa rola para baixo e as pecas passam de lado, uma de
+  cada vez. Quando a rolagem para, o site ENCAIXA na peca mais
+  proxima, para nunca ficar duas pela metade na tela.
+
+  O nome da categoria passa ao fundo mais devagar que a peca.
+  Isso cria profundidade: parece que voce esta atravessando a
+  bancada, nao olhando uma lista.
+
+  A cor muda conforme a categoria, e a barra de baixo mostra
+  em que ponto do percurso voce esta.
+
+  Setas do teclado e Page Up / Page Down andam de peca em
+  peca. Quem navega so pelo teclado consegue atravessar tudo.
+
+  No CELULAR nao existe rolagem de lado: vira uma sequencia
+  vertical, uma peca por tela. Rolagem lateral forcada em
+  telefone atrapalha mais do que impressiona.
+
+  Quem usa o sistema com "reduzir movimento" ligado tambem ve
+  a versao vertical, sem nenhuma animacao.
+
+
+MEXER NO CONTEUDO
+------------------
+  Tudo sai do gerar_site.py.
+
+  Peca nova:
+    1. exporte o JSON atualizado do inventario
+    2. no gerar_site.py, procure o bloco CURADORIA
+    3. acrescente: secao, nome curto, marca e uma frase
+       dizendo o que a peca faz
+    4. rode: python gerar_site.py
+
+  O nome curto e a frase sao escritos a mao de proposito. O
+  nome que vem da loja, tipo "FONTE MSI MAG A750GL 750W 80
+  PLUS", nao serve para aparecer em letra grande.
+
+  A ORDEM das cenas segue a ordem das secoes no topo do
+  arquivo: PC, Perifericos, Monitores, Console, Estacao.
+
+  As fotos sao padronizadas sozinhas: o script apara a margem
+  vazia, centraliza e poe todas num quadrado claro do mesmo
+  tamanho. Nenhuma aparece maior que a outra.
+
+  Itens da lista de desejos nao entram. So o que esta como
+  comprado.
