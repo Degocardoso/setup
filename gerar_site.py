@@ -520,103 +520,137 @@ def montar_html(pecas):
 
   const semMovimento = window.matchMedia("(prefers-reduced-motion: reduce)");
   const estreito     = window.matchMedia("(max-width: 900px)");
-
   function horizontal() {{ return !semMovimento.matches && !estreito.matches; }}
 
+  // posicao ALVO vem da rolagem; posicao MOSTRADA persegue ela com
+  // atraso. E esse atraso que da a sensacao de deslizar em vez de
+  // ser puxado a cada clique da roda.
+  let alvo = 0, mostrada = 0, rodando = false;
+  const PERSEGUE = 0.085;
+
   function medir() {{
-    if (!horizontal()) {{ trilho.style.height = ""; palco.style.transform = ""; return; }}
-    // cada peca ocupa uma tela de rolagem
+    if (!horizontal()) {{
+      trilho.style.height = "";
+      palco.style.transform = "";
+      return;
+    }}
     trilho.style.height = (cenas.length * 100) + "vh";
+    alvo = mostrada = progresso();
+    desenhar();
+    ligar();
+  }}
+
+  function progresso() {{
+    const topo = trilho.offsetTop;
+    const curso = trilho.offsetHeight - window.innerHeight;
+    return Math.min(Math.max((window.scrollY - topo) / curso, 0), 1);
+  }}
+
+  function ligar() {{
+    if (rodando) return;
+    rodando = true;
+    requestAnimationFrame(quadro);
+  }}
+
+  function quadro() {{
+    const falta = alvo - mostrada;
+    mostrada += falta * PERSEGUE;
+    if (Math.abs(falta) < 0.00015) {{ mostrada = alvo; rodando = false; }}
+    else requestAnimationFrame(quadro);
     desenhar();
   }}
 
-  let pedido = null;
-  function aoRolar() {{
-    if (pedido) return;
-    pedido = requestAnimationFrame(() => {{ pedido = null; desenhar(); }});
-  }}
-
   function desenhar() {{
+    const p = mostrada;
     const topo = trilho.offsetTop;
     const curso = trilho.offsetHeight - window.innerHeight;
-    let p = (window.scrollY - topo) / curso;
-    p = Math.min(Math.max(p, 0), 1);
-
     const dentro = window.scrollY > topo - window.innerHeight * .4 &&
                    window.scrollY < topo + curso + window.innerHeight * .4;
     painel.classList.toggle("ativa", dentro);
 
-    if (horizontal()) {{
-      palco.style.transform = "translate3d(" + (-p * (cenas.length - 1) * 100) + "vw,0,0)";
-    }}
-
     const i = Math.min(Math.round(p * (cenas.length - 1)), cenas.length - 1);
     atual.textContent = i + 1;
     barra.style.width = (p * 100).toFixed(2) + "%";
-    const cor = cenas[i].dataset.cor;
-    document.documentElement.style.setProperty("--cor-atual", cor);
+    document.documentElement.style.setProperty("--cor-atual", cenas[i].dataset.cor);
 
     if (!horizontal()) return;
+    palco.style.transform = "translate3d(" + (-p * (cenas.length - 1) * 100) + "vw,0,0)";
 
-    // profundidade: foto, texto e o nome da categoria andam
-    // em velocidades diferentes conforme a cena passa pelo centro
     const passo = 1 / (cenas.length - 1);
     cenas.forEach((cena, j) => {{
-      const d = (p - j * passo) / passo;          // -1 entrando, 0 no centro, 1 saindo
+      const d = (p - j * passo) / passo;    // -1 entrando, 0 no centro, 1 saindo
       if (Math.abs(d) > 1.6) return;
       const foto = cena.querySelector(".foto");
       const texto = cena.querySelector(".texto");
       const marcador = cena.querySelector(".marcador");
-      if (foto)  foto.style.transform  = "translate3d(" + (d * 5) + "vw,0,0) scale(" + (1 - Math.abs(d) * .05) + ")";
-      if (texto) texto.style.transform = "translate3d(" + (d * -2.5) + "vw,0,0)";
+      const suave = d * (1 - Math.min(Math.abs(d), 1) * .25);   // freia na saida
+      if (foto) {{
+        foto.style.transform = "translate3d(" + (suave * 5) + "vw,0,0) scale(" + (1 - Math.abs(d) * .05) + ")";
+        foto.style.opacity = Math.max(1 - Math.abs(d) * 1.7, 0);
+      }}
+      if (texto) {{
+        texto.style.transform = "translate3d(" + (suave * -2.5) + "vw,0,0)";
+        texto.style.opacity = Math.max(1 - Math.abs(d) * 1.9, 0);
+      }}
       if (marcador) marcador.style.transform = "translate3d(" + (d * 20) + "vw,0,0)";
-      const op = Math.max(1 - Math.abs(d) * 1.9, 0);   // a vizinha some rapido
-      if (foto) foto.style.opacity = op;
-      if (texto) texto.style.opacity = op;
     }});
   }}
 
-  // ---- encaixe: ao soltar a rolagem, assenta na peca mais proxima.
-  // Sem isto, parar no meio deixa duas pecas pela metade na tela.
-  let ocioso = null, encaixando = false;
+  // ---- encaixe com curva propria ----
+  // A rolagem suave do navegador tem tempo imprevisivel e da tranco.
+  // Aqui a animacao e nossa: desacelera no fim e assenta na peca.
+  let animando = false;
 
-  function encaixar() {{
-    if (!horizontal() || encaixando) return;
+  function irPara(indice) {{
     const topo = trilho.offsetTop;
     const curso = trilho.offsetHeight - window.innerHeight;
-    const y = window.scrollY;
-    if (y < topo || y > topo + curso) return;
-
     const passo = curso / (cenas.length - 1);
-    const i = Math.round((y - topo) / passo);
-    const alvo = Math.round(topo + i * passo);
-    if (Math.abs(alvo - y) < 4) return;
+    const destino = Math.round(topo + Math.min(Math.max(indice, 0), cenas.length - 1) * passo);
+    const partida = window.scrollY;
+    const distancia = destino - partida;
+    if (Math.abs(distancia) < 2) return;
 
-    encaixando = true;
-    window.scrollTo({{ top: alvo, behavior: "smooth" }});
-    window.setTimeout(() => {{ encaixando = false; }}, 700);
+    const duracao = Math.min(260 + Math.abs(distancia) * .35, 620);
+    const comeco = performance.now();
+    animando = true;
+
+    function passoAnim(agora) {{
+      const t = Math.min((agora - comeco) / duracao, 1);
+      const e = 1 - Math.pow(1 - t, 3);          // desacelera no fim
+      window.scrollTo(0, partida + distancia * e);
+      if (t < 1) requestAnimationFrame(passoAnim);
+      else animando = false;
+    }}
+    requestAnimationFrame(passoAnim);
   }}
 
-  window.addEventListener("scroll", () => {{
-    aoRolar();
+  let ocioso = null;
+  function aoRolar() {{
+    alvo = progresso();
+    ligar();
+    if (animando) return;
     window.clearTimeout(ocioso);
-    ocioso = window.setTimeout(encaixar, 170);
-  }}, {{ passive: true }});
+    ocioso = window.setTimeout(() => {{
+      if (!horizontal()) return;
+      const topo = trilho.offsetTop;
+      const curso = trilho.offsetHeight - window.innerHeight;
+      if (window.scrollY < topo || window.scrollY > topo + curso) return;
+      irPara(Math.round(alvo * (cenas.length - 1)));
+    }}, 140);
+  }}
 
-  // teclado: setas e Page andam de peca em peca
+  window.addEventListener("scroll", aoRolar, {{ passive: true }});
+
   window.addEventListener("keydown", (ev) => {{
     if (!horizontal()) return;
     const mapa = {{ ArrowRight: 1, ArrowDown: 1, PageDown: 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }};
-    const passoTecla = mapa[ev.key];
-    if (!passoTecla) return;
+    const dir = mapa[ev.key];
+    if (!dir) return;
     const topo = trilho.offsetTop;
     const curso = trilho.offsetHeight - window.innerHeight;
     if (window.scrollY < topo || window.scrollY > topo + curso) return;
     ev.preventDefault();
-    const passo = curso / (cenas.length - 1);
-    const i = Math.round((window.scrollY - topo) / passo) + passoTecla;
-    const limite = Math.min(Math.max(i, 0), cenas.length - 1);
-    window.scrollTo({{ top: Math.round(topo + limite * passo), behavior: "smooth" }});
+    irPara(Math.round(alvo * (cenas.length - 1)) + dir);
   }});
 
   window.addEventListener("resize", medir);
