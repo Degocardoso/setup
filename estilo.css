@@ -1,0 +1,260 @@
+:root {
+  --fundo:      #070b12;
+  --painel:     #0e1622;
+  --slot:       #111b28;
+  --linha:      #1e2a3a;
+  --texto:      #f2efe6;
+  --texto-fraco:#8d99ab;
+  --ouro:       #efa02a;
+  --verde:      #9bd45f;
+  --cor-pc: #efa02a;
+  --cor-perif-ricos: #9bd45f;
+  --cor-monitores: #55c8e8;
+  --cor-console: #a981f0;
+  --cor-esta-o: #8e99ab;
+  --raio: 4px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .slot-num, .painel-nome {
+  font-family: "Chakra Petch", system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.quadro {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 24px 72px;
+}
+
+/* ---------- cabeçalho: ficha do jogador ---------- */
+.ficha {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--linha);
+}
+
+.ficha img {
+  width: 76px; height: 76px;
+  flex: none;
+  filter: drop-shadow(0 6px 16px rgba(239,160,42,.25));
+}
+
+.ficha h1 {
+  font-size: 30px;
+  letter-spacing: -.5px;
+  line-height: 1.1;
+}
+.ficha h1 .c { color: var(--ouro); }
+.ficha h1 .s { color: var(--verde); }
+
+.ficha p {
+  margin-top: 2px;
+  color: var(--texto-fraco);
+  font-size: 15px;
+}
+
+.ficha .horario {
+  margin-left: auto;
+  text-align: right;
+  color: var(--texto-fraco);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ficha .horario b { color: var(--texto); font-weight: 500; }
+
+/* ---------- corpo: grade de slots + painel ---------- */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 40px;
+  margin-top: 30px;
+  align-items: start;
+}
+
+.grupo + .grupo { margin-top: 26px; }
+
+.grupo h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  margin-bottom: 10px;
+  color: var(--cor);
+}
+.grupo h2 span {
+  color: var(--texto-fraco);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 8px;
+}
+
+.slot {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.035), transparent 60%),
+    var(--slot);
+  padding: 9px;
+  cursor: pointer;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  transition: border-color .12s, background .12s;
+  /* a entrada em sequencia acontece uma vez, no carregamento */
+  opacity: 0;
+  animation: entra .28s ease-out forwards;
+  animation-delay: var(--atraso);
+}
+
+.slot img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.slot:hover,
+.slot:focus-visible {
+  border-color: var(--cor);
+  background: var(--slot);
+  outline: none;
+}
+
+.slot[aria-current="true"] {
+  border-color: var(--cor);
+  box-shadow: 0 0 0 1px var(--cor), 0 0 18px -4px var(--cor);
+}
+
+.slot .qtd {
+  position: absolute;
+  right: 4px; bottom: 3px;
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor);
+}
+
+@keyframes entra {
+  from { opacity: 0; transform: translateY(6px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- painel do item ---------- */
+.painel {
+  position: sticky;
+  top: 28px;
+  border: 1px solid var(--linha);
+  border-top: 2px solid var(--cor, var(--ouro));
+  border-radius: var(--raio);
+  background: var(--painel);
+  padding: 22px;
+}
+
+.painel-foto {
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(90% 90% at 50% 25%, rgba(255,255,255,.05), transparent 70%);
+  border-radius: var(--raio);
+  margin-bottom: 18px;
+}
+.painel-foto img {
+  max-width: 88%; max-height: 88%;
+  object-fit: contain;
+}
+
+.painel-marca {
+  font-size: 13px;
+  letter-spacing: .06em;
+  color: var(--cor, var(--ouro));
+  min-height: 19px;
+}
+
+.painel-nome {
+  font-size: 27px;
+  line-height: 1.15;
+  letter-spacing: -.4px;
+  margin: 2px 0 10px;
+}
+
+.painel-papel {
+  color: var(--texto-fraco);
+  font-size: 15.5px;
+  max-width: 46ch;
+}
+
+.painel-rodape {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--linha);
+  font-size: 13px;
+  color: var(--texto-fraco);
+}
+
+/* a troca de item e a unica animacao depois do carregamento,
+   e ela responde ao que a pessoa faz */
+.painel.trocando .painel-foto,
+.painel.trocando .painel-texto {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.painel-foto, .painel-texto {
+  transition: opacity .14s ease-out, transform .14s ease-out;
+}
+
+/* ---------- rodapé ---------- */
+.fim {
+  margin-top: 46px;
+  padding-top: 22px;
+  border-top: 1px solid var(--linha);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  align-items: baseline;
+  font-size: 15px;
+}
+.fim a {
+  color: var(--texto);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ouro);
+  padding-bottom: 1px;
+}
+.fim a:hover, .fim a:focus-visible { color: var(--ouro); }
+.fim p { color: var(--texto-fraco); margin-left: auto; }
+
+/* ---------- telas pequenas ---------- */
+@media (max-width: 880px) {
+  .corpo { grid-template-columns: 1fr; gap: 24px; }
+  .painel { position: static; order: -1; }
+  .ficha { flex-wrap: wrap; }
+  .ficha .horario { margin-left: 0; text-align: left; width: 100%; }
+  .slots { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .slot { opacity: 1; }
+}

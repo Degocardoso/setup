@@ -1,511 +1,147 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Setup — thecoinsquash</title>
-<meta name="description" content="O setup completo do canal thecoinsquash: PC, periféricos, monitores e console." />
-<link rel="icon" href="favicon.svg" type="image/svg+xml" />
-<meta property="og:title" content="Setup — thecoinsquash" />
-<meta property="og:description" content="Tudo que eu uso nas lives." />
-<style>
-  :root{
-    --ouro:#f5b53c;
-    --ouro-2:#ba7517;
-    --verde:#9bdb5c;
-    --fundo:#070a10;
-    --fundo-2:#0d1422;
-    --carta:#0f1725;
-    --texto:#f6f7fb;
-    --apagado:#98a1b2;
-    --linha:rgba(255,255,255,.07);
-  }
-
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-
-  body{
-    background:var(--fundo);
-    color:var(--texto);
-    font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif;
-    line-height:1.5;
-    overflow-x:hidden;
-  }
-
-  /* ---------- fundo vivo ---------- */
-  .fundo{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-  .brilho{
-    position:absolute;border-radius:50%;filter:blur(90px);opacity:.16;
-  }
-  .brilho.a{width:620px;height:620px;top:-160px;left:-140px;
-    background:radial-gradient(circle,var(--verde),transparent 70%);
-    animation:flutua 14s ease-in-out infinite alternate}
-  .brilho.b{width:560px;height:560px;top:340px;right:-180px;
-    background:radial-gradient(circle,var(--ouro),transparent 70%);
-    animation:flutua 18s ease-in-out infinite alternate-reverse}
-  @keyframes flutua{
-    from{transform:translate3d(0,0,0) scale(1)}
-    to{transform:translate3d(40px,60px,0) scale(1.18)}
-  }
-  .malha{
-    position:absolute;inset:-2px;
-    background-image:
-      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
-    background-size:64px 64px;
-    mask-image:linear-gradient(to bottom,#000 0%,transparent 85%);
-    -webkit-mask-image:linear-gradient(to bottom,#000 0%,transparent 85%);
-  }
-
-  .quadro{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:0 24px 110px}
-
-  /* ---------- topo ---------- */
-  header{text-align:center;padding:84px 0 20px}
-
-  .moeda{
-    width:132px;height:132px;margin:0 auto 26px;position:relative;
-    transform-style:preserve-3d;animation:gira 5s linear infinite;
-    filter:drop-shadow(0 18px 40px rgba(245,181,60,.25));
-  }
-  .moeda .face{position:absolute;inset:0;backface-visibility:hidden}
-  .moeda .face svg{width:100%;height:100%;display:block}
-  .moeda .tras{transform:rotateY(180deg)}
-  @keyframes gira{
-    from{transform:rotateY(0) rotateX(8deg)}
-    to{transform:rotateY(360deg) rotateX(8deg)}
-  }
-
-  h1{font-size:clamp(40px,7.5vw,72px);font-weight:900;letter-spacing:-2.5px;
-     text-transform:lowercase;line-height:1}
-  h1 .c{color:var(--ouro)}
-  h1 .s{color:var(--verde)}
-
-  .sub{margin-top:16px;font-size:13px;font-weight:800;letter-spacing:.4em;
-        text-transform:uppercase;color:var(--apagado)}
-  .frase{margin:22px auto 0;max-width:520px;color:var(--apagado);font-size:16px}
-
-  .placar{
-    display:inline-flex;align-items:center;gap:10px;margin-top:26px;
-    padding:9px 20px;border-radius:999px;
-    border:1px solid rgba(245,181,60,.35);background:rgba(245,181,60,.07);
-    font-size:14px;font-weight:700;color:var(--ouro);
-  }
-  .placar b{font-size:19px}
-
-  /* ---------- filtros ---------- */
-  .filtros{
-    position:sticky;top:0;z-index:5;
-    display:flex;flex-wrap:wrap;gap:9px;justify-content:center;
-    padding:16px 0;margin:36px 0 8px;
-    background:rgba(7,10,16,.9);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--linha);
-  }
-  .chip{
-    padding:9px 18px;border-radius:999px;cursor:pointer;
-    border:1px solid var(--linha);background:rgba(255,255,255,.03);
-    color:var(--apagado);font-family:inherit;font-size:14px;font-weight:700;
-    transition:all .2s;
-  }
-  .chip:hover{color:var(--texto);border-color:rgba(245,181,60,.4)}
-  .chip.ativo{background:var(--ouro);border-color:var(--ouro);color:#1a1205}
-
-  /* ---------- seções ---------- */
-  .bloco{margin-top:44px;scroll-margin-top:90px}
-  .bloco.oculto{display:none}
-
-  .cabecalho{display:flex;align-items:center;gap:14px;margin-bottom:20px}
-  .cabecalho h2{font-size:15px;font-weight:800;letter-spacing:.26em;
-                 text-transform:uppercase;color:var(--verde);white-space:nowrap}
-  .conta{
-    font-size:11px;font-weight:800;color:var(--apagado);
-    border:1px solid var(--linha);border-radius:999px;padding:2px 9px;
-  }
-  .risco{height:1px;flex:1;background:linear-gradient(90deg,rgba(155,219,92,.35),transparent)}
-
-  .lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px}
-
-  .item{
-    background:var(--carta);
-    border:1px solid var(--linha);
-    border-radius:16px;
-    overflow:hidden;
-    opacity:0;transform:translateY(22px);
-    transition:opacity .5s ease,transform .5s ease,border-color .25s,box-shadow .25s;
-    transition-delay:calc(var(--i) * 45ms);
-  }
-  .item.aparece{opacity:1;transform:translateY(0)}
-  .item:hover{
-    border-color:rgba(245,181,60,.5);
-    box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(245,181,60,.15);
-  }
-  .item:hover .foto img{transform:scale(1.07)}
-
-  .foto{
-    position:relative;aspect-ratio:4/3;
-    background:linear-gradient(160deg,#141d2c,#0b111c);
-    display:grid;place-items:center;overflow:hidden;
-    border-bottom:1px solid var(--linha);
-  }
-  .foto img{width:100%;height:100%;object-fit:contain;padding:14px;
-             transition:transform .35s ease}
-  .semfoto{width:52px;height:52px;border-radius:50%;
-            border:2px dashed rgba(245,181,60,.3)}
-
-  .qtd{
-    position:absolute;top:10px;right:10px;
-    padding:3px 10px;border-radius:999px;
-    background:rgba(7,10,16,.85);border:1px solid rgba(245,181,60,.45);
-    color:var(--ouro);font-size:12px;font-weight:800;
-  }
-
-  .txt{padding:15px 17px 17px}
-  .txt h3{font-size:16px;font-weight:700;letter-spacing:-.2px}
-  .txt p{margin-top:4px;font-size:13.5px;color:var(--apagado)}
-  .marca{
-    display:inline-block;margin-top:11px;font-size:10.5px;font-weight:800;
-    letter-spacing:.17em;text-transform:uppercase;color:var(--ouro);opacity:.9;
-  }
-
-  /* ---------- rodapé ---------- */
-  footer{margin-top:84px;padding-top:34px;border-top:1px solid var(--linha);text-align:center}
-  .redes{display:flex;flex-wrap:wrap;gap:11px;justify-content:center;margin-bottom:20px}
-  .redes a{
-    padding:11px 22px;border:1px solid rgba(245,181,60,.4);border-radius:999px;
-    color:var(--texto);text-decoration:none;font-size:14px;font-weight:700;
-    transition:all .2s;
-  }
-  .redes a:hover{background:rgba(245,181,60,.12);border-color:var(--ouro);
-                  color:var(--ouro);transform:translateY(-2px)}
-  .assinatura{font-size:13px;color:var(--apagado)}
-
-  @media (max-width:560px){
-    .quadro{padding:0 16px 80px}
-    header{padding-top:54px}
-    .lista{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-    .txt{padding:12px 13px 14px}
-    .txt h3{font-size:14.5px}
-    .txt p{font-size:12.5px}
-  }
-
-  @media (prefers-reduced-motion:reduce){
-    *{animation:none !important;transition:none !important}
-    .item{opacity:1;transform:none}
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventário · thecoinsquash</title>
+<meta name="description" content="As peças que fazem a live do thecoinsquash funcionar.">
+<link rel="icon" href="img/favicon.png">
+<meta property="og:title" content="Inventário · thecoinsquash">
+<meta property="og:description" content="As peças que fazem a live funcionar.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
 </head>
 <body>
-
-<div class="fundo">
-  <div class="malha"></div>
-  <div class="brilho a"></div>
-  <div class="brilho b"></div>
-</div>
-
-<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
-<symbol id="cara" viewBox="0 0 240 240">
-  <circle cx="120" cy="120" r="110" fill="#854F0B"/>
-  <circle cx="120" cy="120" r="103" fill="#EF9F27"/>
-  <circle cx="120" cy="120" r="103" fill="none" stroke="#854F0B" stroke-width="8" stroke-linecap="round" stroke-dasharray="1.5 16.48"/>
-  <circle cx="120" cy="120" r="88" fill="#FAC775"/>
-  <circle cx="120" cy="120" r="82" fill="#3B6D11"/>
-  <circle cx="120" cy="120" r="66" fill="#97C459"/>
-  <text x="120" y="156" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="96" font-weight="700" fill="#173404">$</text>
-  <circle cx="120" cy="120" r="82" fill="none" stroke="#BA7517" stroke-width="3"/>
-</symbol>
-<symbol id="coroa" viewBox="0 0 240 240">
-  <circle cx="120" cy="120" r="110" fill="#854F0B"/>
-  <circle cx="120" cy="120" r="103" fill="#EF9F27"/>
-  <circle cx="120" cy="120" r="103" fill="none" stroke="#854F0B" stroke-width="8" stroke-linecap="round" stroke-dasharray="1.5 16.48"/>
-  <circle cx="120" cy="120" r="88" fill="#FAC775"/>
-  <circle cx="120" cy="120" r="82" fill="#97C459"/>
-  <circle cx="120" cy="120" r="66" fill="#3B6D11"/>
-  <g fill="#C0DD97">
-    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(45 120 120)"/>
-    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(135 120 120)"/>
-    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(225 120 120)"/>
-    <path d="M120,120 C96,106 92,76 108,73 C117,71 120,79 120,85 C120,79 123,71 132,73 C148,76 144,106 120,120 Z" transform="rotate(315 120 120)"/>
-  </g>
-  <path d="M120,122 C126,138 126,152 118,166" fill="none" stroke="#C0DD97" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="120" cy="120" r="82" fill="none" stroke="#BA7517" stroke-width="3"/>
-</symbol>
-</defs></svg>
-
 <div class="quadro">
 
-  <header>
-    <div class="moeda" aria-hidden="true">
-      <span class="face"><svg viewBox="0 0 240 240"><use href="#cara"/></svg></span>
-      <span class="face tras"><svg viewBox="0 0 240 240"><use href="#coroa"/></svg></span>
+  <header class="ficha">
+    <img src="img/logo.png" alt="" width="76" height="76">
+    <div>
+      <h1>the<span class="c">coin</span><span class="s">squash</span></h1>
+      <p>24 peças em uso. Passe por uma delas para ver o que faz.</p>
     </div>
-    <h1>the<span class="c">coin</span><span class="s">squash</span></h1>
-    <div class="sub">meu setup</div>
-    <p class="frase">Tudo que eu uso nas lives, do PC à cadeira.</p>
-    <div class="placar"><b>21</b> itens</div>
+    <div class="horario">
+      <b>Terça a sexta</b>, 21h30<br>
+      <b>Sábado e domingo</b>, 16h
+    </div>
   </header>
 
-  <nav class="filtros">
-      <button class="chip ativo" data-filtro="todos">Tudo</button>
-      <button class="chip" data-filtro="PC">PC</button>
-      <button class="chip" data-filtro="Periféricos">Periféricos</button>
-      <button class="chip" data-filtro="Monitores">Monitores</button>
-      <button class="chip" data-filtro="Console">Console</button>
-      <button class="chip" data-filtro="Estação">Estação</button>
-  </nav>
+  <div class="corpo">
+    <div class="colecao">
+    <section class="grupo" style="--cor:#efa02a">
+      <h2>PC <span>9</span></h2>
+      <div class="slots">
+        <button class="slot" type="button" data-i="0" style="--atraso:0ms" aria-label="MAG A750GL"><img src="img/mag-a750gl.png" alt=""></button>
+        <button class="slot" type="button" data-i="1" style="--atraso:22ms" aria-label="MAG Coreliquid A12"><img src="img/mag-coreliquid-a12.png" alt=""></button>
+        <button class="slot" type="button" data-i="2" style="--atraso:44ms" aria-label="B850 Gaming WiFi 6"><img src="img/b850-gaming-wifi-6.png" alt=""></button>
+        <button class="slot" type="button" data-i="3" style="--atraso:66ms" aria-label="Ryzen 7 9700X"><img src="img/ryzen-7-9700x.png" alt=""></button>
+        <button class="slot" type="button" data-i="4" style="--atraso:88ms" aria-label="GeForce RTX 5070"><img src="img/geforce-rtx-5070.png" alt=""></button>
+        <button class="slot" type="button" data-i="5" style="--atraso:110ms" aria-label="Vengeance RGB 16GB"><img src="img/vengeance-rgb-16gb.png" alt=""></button>
+        <button class="slot" type="button" data-i="6" style="--atraso:132ms" aria-label="NV3 1TB"><img src="img/nv3-1tb.png" alt=""></button>
+        <button class="slot" type="button" data-i="7" style="--atraso:154ms" aria-label="Seis fans ARGB"><img src="img/seis-fans-argb.png" alt=""></button>
+        <button class="slot" type="button" data-i="8" style="--atraso:176ms" aria-label="Placa de captura"><img src="img/placa-de-captura.png" alt=""></button>
+      </div>
+    </section>
+    <section class="grupo" style="--cor:#9bd45f">
+      <h2>Periféricos <span>6</span></h2>
+      <div class="slots">
+        <button class="slot" type="button" data-i="9" style="--atraso:198ms" aria-label="SC8"><img src="img/sc8.png" alt=""></button>
+        <button class="slot" type="button" data-i="10" style="--atraso:220ms" aria-label="Conch"><img src="img/conch.png" alt=""></button>
+        <button class="slot" type="button" data-i="11" style="--atraso:242ms" aria-label="Zeus X"><img src="img/zeus-x.png" alt=""></button>
+        <button class="slot" type="button" data-i="12" style="--atraso:264ms" aria-label="Phantom"><img src="img/phantom.png" alt=""></button>
+        <button class="slot" type="button" data-i="13" style="--atraso:286ms" aria-label="X11"><img src="img/x11.png" alt=""></button>
+        <button class="slot" type="button" data-i="14" style="--atraso:308ms" aria-label="AM8PROT"><img src="img/am8prot.png" alt=""></button>
+      </div>
+    </section>
+    <section class="grupo" style="--cor:#55c8e8">
+      <h2>Monitores <span>3</span></h2>
+      <div class="slots">
+        <button class="slot" type="button" data-i="15" style="--atraso:330ms" aria-label="AOC 24 polegadas"><img src="img/aoc-24-polegadas.png" alt=""></button>
+        <button class="slot" type="button" data-i="16" style="--atraso:352ms" aria-label="Braço NB F80"><img src="img/bra-o-nb-f80.png" alt=""><span class="qtd">2</span></button>
+        <button class="slot" type="button" data-i="17" style="--atraso:374ms" aria-label="Speed 24G2HE5"><img src="img/speed-24g2he5.png" alt=""></button>
+      </div>
+    </section>
+    <section class="grupo" style="--cor:#a981f0">
+      <h2>Console <span>4</span></h2>
+      <div class="slots">
+        <button class="slot" type="button" data-i="18" style="--atraso:396ms" aria-label="PlayStation 5 Slim"><img src="img/playstation-5-slim.png" alt=""></button>
+        <button class="slot" type="button" data-i="19" style="--atraso:418ms" aria-label="DualSense Galactic Purple"><img src="img/dualsense-galactic-purple.png" alt=""></button>
+        <button class="slot" type="button" data-i="20" style="--atraso:440ms" aria-label="Base de carregamento"><img src="img/base-de-carregamento.png" alt=""></button>
+        <button class="slot" type="button" data-i="21" style="--atraso:462ms" aria-label="Hub USB de quatro portas"><img src="img/hub-usb-de-quatro-portas.png" alt=""></button>
+      </div>
+    </section>
+    <section class="grupo" style="--cor:#8e99ab">
+      <h2>Estação <span>2</span></h2>
+      <div class="slots">
+        <button class="slot" type="button" data-i="22" style="--atraso:484ms" aria-label="Mônaco BT07"><img src="img/m-naco-bt07.png" alt=""></button>
+        <button class="slot" type="button" data-i="23" style="--atraso:506ms" aria-label="Mesa em L"><img src="img/mesa-em-l.png" alt=""></button>
+      </div>
+    </section>
+    </div>
 
-  <section class="bloco" data-secao="PC">
-    <div class="cabecalho">
-      <h2>PC</h2>
-      <span class="conta">8</span>
-      <div class="risco"></div>
-    </div>
-    <div class="lista">
-      <article class="item" style="--i:0">
-        <div class="foto"><img src="img/mag-a750gl.webp" alt="MAG A750GL" loading="lazy"></div>
-        <div class="txt">
-          <h3>MAG A750GL</h3>
-          <p>Fonte 750W 80 Plus</p>
-          <span class="marca">MSI</span>
-        </div>
-      </article>
-      <article class="item" style="--i:1">
-        <div class="foto"><img src="img/mag-coreliquid-a12.webp" alt="MAG Coreliquid A12" loading="lazy"></div>
-        <div class="txt">
-          <h3>MAG Coreliquid A12</h3>
-          <p>Water cooler 360mm</p>
-          <span class="marca">MSI</span>
-        </div>
-      </article>
-      <article class="item" style="--i:2">
-        <div class="foto"><img src="img/b850-gaming-wifi-6.webp" alt="B850 Gaming WiFi 6" loading="lazy"></div>
-        <div class="txt">
-          <h3>B850 Gaming WiFi 6</h3>
-          <p>Placa-mãe</p>
-          <span class="marca">Gigabyte</span>
-        </div>
-      </article>
-      <article class="item" style="--i:3">
-        <div class="foto"><img src="img/ryzen-7-9700x.jpeg" alt="Ryzen 7 9700X" loading="lazy"></div>
-        <div class="txt">
-          <h3>Ryzen 7 9700X</h3>
-          <p>Processador</p>
-          <span class="marca">AMD</span>
-        </div>
-      </article>
-      <article class="item" style="--i:4">
-        <div class="foto"><img src="img/geforce-rtx-5070.jpeg" alt="GeForce RTX 5070" loading="lazy"></div>
-        <div class="txt">
-          <h3>GeForce RTX 5070</h3>
-          <p>Placa de vídeo</p>
-          <span class="marca">MSI</span>
-        </div>
-      </article>
-      <article class="item" style="--i:5">
-        <div class="foto"><img src="img/vengeance-rgb-16gb.webp" alt="Vengeance RGB 16GB" loading="lazy"></div>
-        <div class="txt">
-          <h3>Vengeance RGB 16GB</h3>
-          <p>Memória DDR5 5600MHz</p>
-          <span class="marca">Corsair</span>
-        </div>
-      </article>
-      <article class="item" style="--i:6">
-        <div class="foto"><img src="img/nv3-1tb.webp" alt="NV3 1TB" loading="lazy"></div>
-        <div class="txt">
-          <h3>NV3 1TB</h3>
-          <p>SSD M.2 NVMe</p>
-          <span class="marca">Kingston</span>
-        </div>
-      </article>
-      <article class="item" style="--i:7">
-        <div class="foto"><img src="img/kit-6-fans-argb.webp" alt="Kit 6 fans ARGB" loading="lazy"></div>
-        <div class="txt">
-          <h3>Kit 6 fans ARGB</h3>
-          <p>Ventoinhas 120mm</p>
-          
-        </div>
-      </article>
-    </div>
-  </section>
-  <section class="bloco" data-secao="Periféricos">
-    <div class="cabecalho">
-      <h2>Periféricos</h2>
-      <span class="conta">4</span>
-      <div class="risco"></div>
-    </div>
-    <div class="lista">
-      <article class="item" style="--i:0">
-        <div class="foto"><img src="img/zeus-x.webp" alt="Zeus X" loading="lazy"></div>
-        <div class="txt">
-          <h3>Zeus X</h3>
-          <p>Headset</p>
-          <span class="marca">Redragon</span>
-        </div>
-      </article>
-      <article class="item" style="--i:1">
-        <div class="foto"><img src="img/phantom.webp" alt="Phantom" loading="lazy"></div>
-        <div class="txt">
-          <h3>Phantom</h3>
-          <p>Teclado mecânico</p>
-          <span class="marca">SuperFrame</span>
-        </div>
-      </article>
-      <article class="item" style="--i:2">
-        <div class="foto"><img src="img/x11.webp" alt="X11" loading="lazy"></div>
-        <div class="txt">
-          <h3>X11</h3>
-          <p>Mouse</p>
-          <span class="marca">Attack Shark</span>
-        </div>
-      </article>
-      <article class="item" style="--i:3">
-        <div class="foto"><img src="img/am8prot.jpeg" alt="AM8PROT" loading="lazy"></div>
-        <div class="txt">
-          <h3>AM8PROT</h3>
-          <p>Microfone com braço articulado</p>
-          <span class="marca">FIFINE</span>
-        </div>
-      </article>
-    </div>
-  </section>
-  <section class="bloco" data-secao="Monitores">
-    <div class="cabecalho">
-      <h2>Monitores</h2>
-      <span class="conta">3</span>
-      <div class="risco"></div>
-    </div>
-    <div class="lista">
-      <article class="item" style="--i:0">
-        <div class="foto"><img src="img/aoc-24-180hz.webp" alt="AOC 24&quot; 180Hz" loading="lazy"></div>
-        <div class="txt">
-          <h3>AOC 24&quot; 180Hz</h3>
-          <p>Monitor principal</p>
-          <span class="marca">AOC</span>
-        </div>
-      </article>
-      <article class="item" style="--i:1">
-        <div class="foto"><img src="img/suporte-nb-f80.webp" alt="Suporte NB F80" loading="lazy"><span class="qtd">×2</span></div>
-        <div class="txt">
-          <h3>Suporte NB F80</h3>
-          <p>Braço articulado de monitor</p>
-          
-        </div>
-      </article>
-      <article class="item" style="--i:2">
-        <div class="foto"><img src="img/speed-24g2he5.jpeg" alt="Speed 24G2HE5" loading="lazy"></div>
-        <div class="txt">
-          <h3>Speed 24G2HE5</h3>
-          <p>Monitor secundário, IPS 75Hz</p>
-          <span class="marca">AOC</span>
-        </div>
-      </article>
-    </div>
-  </section>
-  <section class="bloco" data-secao="Console">
-    <div class="cabecalho">
-      <h2>Console</h2>
-      <span class="conta">4</span>
-      <div class="risco"></div>
-    </div>
-    <div class="lista">
-      <article class="item" style="--i:0">
-        <div class="foto"><img src="img/playstation-5-slim.webp" alt="PlayStation 5 Slim" loading="lazy"></div>
-        <div class="txt">
-          <h3>PlayStation 5 Slim</h3>
-          <p>Console</p>
-          <span class="marca">Sony</span>
-        </div>
-      </article>
-      <article class="item" style="--i:1">
-        <div class="foto"><img src="img/dualsense-galactic-purple.webp" alt="DualSense Galactic Purple" loading="lazy"></div>
-        <div class="txt">
-          <h3>DualSense Galactic Purple</h3>
-          <p>Controle sem fio</p>
-          <span class="marca">Sony</span>
-        </div>
-      </article>
-      <article class="item" style="--i:2">
-        <div class="foto"><img src="img/base-de-carregamento.webp" alt="Base de carregamento" loading="lazy"></div>
-        <div class="txt">
-          <h3>Base de carregamento</h3>
-          <p>Dock para DualSense</p>
-          <span class="marca">Sony</span>
-        </div>
-      </article>
-      <article class="item" style="--i:3">
-        <div class="foto"><img src="img/hub-usb-4-portas.webp" alt="Hub USB 4 portas" loading="lazy"></div>
-        <div class="txt">
-          <h3>Hub USB 4 portas</h3>
-          <p>Expansão do PS5</p>
-          
-        </div>
-      </article>
-    </div>
-  </section>
-  <section class="bloco" data-secao="Estação">
-    <div class="cabecalho">
-      <h2>Estação</h2>
-      <span class="conta">2</span>
-      <div class="risco"></div>
-    </div>
-    <div class="lista">
-      <article class="item" style="--i:0">
-        <div class="foto"><img src="img/m-naco-bt07.webp" alt="Mônaco BT07" loading="lazy"></div>
-        <div class="txt">
-          <h3>Mônaco BT07</h3>
-          <p>Cadeira ergonômica</p>
-          <span class="marca">Luvinco</span>
-        </div>
-      </article>
-      <article class="item" style="--i:1">
-        <div class="foto"><img src="img/mesa-em-l.webp" alt="Mesa em L" loading="lazy"></div>
-        <div class="txt">
-          <h3>Mesa em L</h3>
-          <p>Escritório</p>
-          
-        </div>
-      </article>
-    </div>
-  </section>
+    <aside class="painel" id="painel" aria-live="polite">
+      <div class="painel-foto"><img id="p-img" src="" alt=""></div>
+      <div class="painel-texto">
+        <div class="painel-marca" id="p-marca"></div>
+        <h3 class="painel-nome" id="p-nome"></h3>
+        <p class="painel-papel" id="p-papel"></p>
+        <div class="painel-rodape" id="p-rodape"></div>
+      </div>
+    </aside>
+  </div>
 
-  <footer>
-    <div class="redes">
-      <a href="https://twitch.tv/thecoinsquash" target="_blank" rel="noopener">Twitch</a>
-      <a href="https://kick.com/thecoinsquash" target="_blank" rel="noopener">Kick</a>
-      <a href="https://instagram.com/cardoso.dego23" target="_blank" rel="noopener">Instagram</a>
-      <a href="https://x.com/thecoinsquash" target="_blank" rel="noopener">X</a>
-    </div>
-    <p class="assinatura">Ter a sex 21h30 · Sábado e domingo 16h</p>
+  <footer class="fim">
+    <a href="https://twitch.tv/thecoinsquash">Twitch</a>
+    <a href="https://kick.com/thecoinsquash">Kick</a>
+    <a href="https://instagram.com/cardoso.dego23">Instagram</a>
+    <a href="https://x.com/thecoinsquash">X</a>
+    <p>Sem valores, por opção: preço de hardware envelhece rápido.</p>
   </footer>
-
 </div>
 
 <script>
-  /* cartas aparecem conforme voce rola */
-  var olho = new IntersectionObserver(function(entradas){
-    entradas.forEach(function(e){
-      if(e.isIntersecting){ e.target.classList.add("aparece"); olho.unobserve(e.target); }
-    });
-  }, { threshold:.12, rootMargin:"0px 0px -40px 0px" });
-  document.querySelectorAll(".item").forEach(function(el){ olho.observe(el); });
+const PECAS = [{"nome": "MAG A750GL", "marca": "MSI", "papel": "Fonte de 750 W com selo 80 Plus.", "img": "mag-a750gl.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "MAG Coreliquid A12", "marca": "MSI", "papel": "Water cooler de 360 mm no processador.", "img": "mag-coreliquid-a12.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "B850 Gaming WiFi 6", "marca": "Gigabyte", "papel": "Onde todas as peças se encontram.", "img": "b850-gaming-wifi-6.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "Ryzen 7 9700X", "marca": "AMD", "papel": "Processa o jogo e a transmissão ao mesmo tempo.", "img": "ryzen-7-9700x.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "GeForce RTX 5070", "marca": "MSI", "papel": "Desenha o jogo e codifica o vídeo da live.", "img": "geforce-rtx-5070.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "Vengeance RGB 16GB", "marca": "Corsair", "papel": "Memória DDR5 a 5600 MHz.", "img": "vengeance-rgb-16gb.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "NV3 1TB", "marca": "Kingston", "papel": "Guarda os jogos e as gravações das lives.", "img": "nv3-1tb.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "Seis fans ARGB", "marca": "", "papel": "Tiram o calor de dentro do gabinete.", "img": "seis-fans-argb.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "Placa de captura", "marca": "", "papel": "Leva a imagem e o som do PS5 para o PC.", "img": "placa-de-captura.png", "cor": "#efa02a", "secao": "PC", "qtd": 1}, {"nome": "SC8", "marca": "FIFINE", "papel": "Mesa de som: junta PS5, PC e microfone num fone só.", "img": "sc8.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "Conch", "marca": "TRN", "papel": "Fone intra que eu uso jogando.", "img": "conch.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "Zeus X", "marca": "Redragon", "papel": "Headset de reserva.", "img": "zeus-x.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "Phantom", "marca": "SuperFrame", "papel": "Teclado mecânico.", "img": "phantom.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "X11", "marca": "Attack Shark", "papel": "Mouse.", "img": "x11.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "AM8PROT", "marca": "FIFINE", "papel": "O microfone que você ouve na live.", "img": "am8prot.png", "cor": "#9bd45f", "secao": "Periféricos", "qtd": 1}, {"nome": "AOC 24 polegadas", "marca": "AOC", "papel": "Monitor principal, 180 Hz.", "img": "aoc-24-polegadas.png", "cor": "#55c8e8", "secao": "Monitores", "qtd": 1}, {"nome": "Braço NB F80", "marca": "", "papel": "Tira os monitores da mesa e libera espaço.", "img": "bra-o-nb-f80.png", "cor": "#55c8e8", "secao": "Monitores", "qtd": 2}, {"nome": "Speed 24G2HE5", "marca": "AOC", "papel": "Monitor de apoio, onde fica o chat.", "img": "speed-24g2he5.png", "cor": "#55c8e8", "secao": "Monitores", "qtd": 1}, {"nome": "PlayStation 5 Slim", "marca": "Sony", "papel": "Onde rodam o R6 e o EA FC.", "img": "playstation-5-slim.png", "cor": "#a981f0", "secao": "Console", "qtd": 1}, {"nome": "DualSense Galactic Purple", "marca": "Sony", "papel": "Controle.", "img": "dualsense-galactic-purple.png", "cor": "#a981f0", "secao": "Console", "qtd": 1}, {"nome": "Base de carregamento", "marca": "Sony", "papel": "Deixa os controles sempre prontos.", "img": "base-de-carregamento.png", "cor": "#a981f0", "secao": "Console", "qtd": 1}, {"nome": "Hub USB de quatro portas", "marca": "", "papel": "Mais portas na frente do PS5.", "img": "hub-usb-de-quatro-portas.png", "cor": "#a981f0", "secao": "Console", "qtd": 1}, {"nome": "Mônaco BT07", "marca": "Luvinco", "papel": "Cadeira, para aguentar live longa.", "img": "m-naco-bt07.png", "cor": "#8e99ab", "secao": "Estação", "qtd": 1}, {"nome": "Mesa em L", "marca": "", "papel": "Cabe o PC, os dois monitores e o PS5.", "img": "mesa-em-l.png", "cor": "#8e99ab", "secao": "Estação", "qtd": 1}];
+const painel = document.getElementById("painel");
+const campos = {
+  img: document.getElementById("p-img"),
+  marca: document.getElementById("p-marca"),
+  nome: document.getElementById("p-nome"),
+  papel: document.getElementById("p-papel"),
+  rodape: document.getElementById("p-rodape"),
+};
+const slots = [...document.querySelectorAll(".slot")];
+let atual = -1;
 
-  /* filtros por categoria */
-  var chips = document.querySelectorAll(".chip");
-  var blocos = document.querySelectorAll(".bloco");
-  chips.forEach(function(chip){
-    chip.addEventListener("click", function(){
-      chips.forEach(function(c){ c.classList.remove("ativo"); });
-      chip.classList.add("ativo");
-      var alvo = chip.dataset.filtro;
-      blocos.forEach(function(b){
-        var mostra = (alvo === "todos" || b.dataset.secao === alvo);
-        b.classList.toggle("oculto", !mostra);
-        if(mostra){
-          b.querySelectorAll(".item").forEach(function(it){ it.classList.add("aparece"); });
-        }
-      });
-    });
-  });
+function mostrar(i, fixar) {
+  if (i === atual) return;
+  atual = i;
+  const p = PECAS[i];
+  painel.classList.add("trocando");
+  window.setTimeout(() => {
+    painel.style.setProperty("--cor", p.cor);
+    campos.img.src = p.img ? "img/" + p.img : "";
+    campos.img.alt = p.nome;
+    campos.marca.textContent = p.marca;
+    campos.nome.textContent = p.nome;
+    campos.papel.textContent = p.papel;
+    campos.rodape.textContent = p.secao + (p.qtd > 1 ? " · " + p.qtd + " unidades" : "");
+    painel.classList.remove("trocando");
+  }, 140);
+  if (fixar) {
+    slots.forEach(s => s.removeAttribute("aria-current"));
+    slots[i].setAttribute("aria-current", "true");
+  }
+}
+
+slots.forEach((slot, i) => {
+  slot.addEventListener("mouseenter", () => mostrar(i, true));
+  slot.addEventListener("focus", () => mostrar(i, true));
+  slot.addEventListener("click", () => mostrar(i, true));
+});
+
+mostrar(0, true);
 </script>
 </body>
 </html>
